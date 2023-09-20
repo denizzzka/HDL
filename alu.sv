@@ -1,9 +1,16 @@
+typedef struct packed
+{
+    logic b_inv; // invert second operand?
+    logic carry_disable;
+    logic[1:0] cmd; //0 - SUM, 1 - AND, 2 -OR, add enum here
+} AluCtrl;
+
 module alu
     (
         input[3:0] d1,
         input[3:0] d2,
         input carry_in,
-        input[3:0] ctrl,
+        input AluCtrl ctrl,
         output[3:0] res,
         output carry_out
     );
@@ -45,13 +52,17 @@ module alu_test;
     logic[3:0] d2;
     bit carry_in;
     logic carry_out;
-    bit[3:0] ctrl;
+    AluCtrl ctrl;
     logic[3:0] res;
 
     full_adder_test f();
     alu a(.*);
 
     initial begin
+        ctrl.b_inv = 0;
+        ctrl.carry_disable = 0;
+        ctrl.cmd = 0;
+
         //~ $monitor("ctrl=%b d1=%0d d2=%0d gen=%b propagate=%b carry=%b res=%0d res=%b carry_out=%b", ctrl, d1, d2, a.gen, a.propagate, a.carry, res, res, carry_out);
 
         for(d1 = 0; d1 < 15; d1++)
@@ -70,13 +81,12 @@ endmodule;
 module full_adder
     (
         input data1, data2, carry_in,
-        input[3:0] ctrl,
+        input AluCtrl ctrl,
         output ret, gen, propagate
     );
 
     wire prep_data2 = data2 ^ b_inv; // optionally inverts data2
-    wire carry_disable = ctrl[1];
-    wire carry = carry_in & ~carry_disable; // optionally can be disabled, TODO: can be disabled once for whole circuit?
+    wire carry = carry_in & ~ctrl.carry_disable;
     wire b_inv = ctrl[0];
 
     assign gen = data1 & prep_data2;
@@ -115,12 +125,16 @@ endmodule;
 
 module full_adder_test;
     bit data1, data2, carry_in;
-    bit[3:0] ctrl;
+    AluCtrl ctrl;
     logic ret, gen, propagate;
 
     full_adder a(.*);
 
     initial begin
+        ctrl.b_inv = 0;
+        ctrl.carry_disable = 0;
+        ctrl.cmd = 0;
+
         $monitor("ctrl=%b carry_in=%b data1=%0d data2=%0d gen=%b propagate=%b ret=%b", ctrl, carry_in, data1, data2, gen, propagate, ret);
 
         #1
