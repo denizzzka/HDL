@@ -1,15 +1,29 @@
+typedef enum logic[4:0] {
+    ADD=5'b00000,
+    SUB=5'b11000,
+    XOR=5'b00100,
+    AND=5'b00101,
+    OR =5'b00110
+} AluCmd;
+
 typedef struct packed
 {
+    logic carry_in; // carry input (for example, from prev stage)
     logic b_inv; // invert second operand?
     logic carry_disable;
-    logic[1:0] cmd; //0 - SUM, 1 - AND, 2 -OR, add enum here
+    logic[1:0] cmd; // cmd for full adder mux switch
+} AluCtrlInternal;
+
+typedef union packed
+{
+    AluCmd cmd;
+    AluCtrlInternal ctrl;
 } AluCtrl;
 
 module alu
     (
         input[3:0] d1,
         input[3:0] d2,
-        input carry_in,
         input AluCtrl ctrl,
         output[3:0] res,
         output carry_out
@@ -19,6 +33,7 @@ module alu
     wire[3:0] propagate;
     wire[4:0] carry;
 
+    wire carry_in = ctrl.ctrl.carry_in;
     assign carry[0] = carry_in;
     assign carry_out = carry[4];
 
@@ -59,9 +74,7 @@ module alu_test;
     alu a(.*);
 
     initial begin
-        ctrl.b_inv = 0;
-        ctrl.carry_disable = 0;
-        ctrl.cmd = 0;
+        ctrl.ctrl.b_inv = 0;
 
         //~ $monitor("ctrl=%b d1=%0d d2=%0d gen=%b propagate=%b carry=%b res=%0d res=%b carry_out=%b", ctrl, d1, d2, a.gen, a.propagate, a.carry, res, res, carry_out);
 
@@ -69,10 +82,31 @@ module alu_test;
         begin
             for(d2 = 0; d2 < 15; d2++)
             begin
+                ctrl.cmd = ADD;
                 #1
-                ctrl = ctrl;
                 assert(d1 + d2 == res) else $error("%h + %h = %h carry=%b", d1, d2, res, a.carry);
                 assert((int'(d1) + d2 > 4'b1111) == carry_out) else $error("d1=%b d2=%b carry_out=%b", d1, d2, carry_out);
+
+                ctrl.cmd = SUB;
+                #1
+                assert(d1 - d2 == res) else $error("%h - %h = %h carry=%b", d1, d2, res, a.carry);
+                //~ assert((int'(d1) + d2 > 4'b1111) == carry_out) else $error("d1=%b d2=%b carry_out=%b", d1, d2, carry_out);
+
+                ctrl.cmd = XOR;
+                #1
+                assert(d1 ^ d2 == res) else $error("%b xor %b = %b", d1, d2, res);
+
+                ctrl.cmd = AND;
+                #1
+                assert((d1 & d2) == res) else $error("%b and %b = %b", d1, d2, res);
+
+                ctrl.cmd = OR;
+                #1
+                assert((d1 | d2) == res) else $error("%b or %b = %b", d1, d2, res);
+
+                //~ ctrl.cmd = XZ;
+                //~ #1
+                //~ assert((d1 & d2) == res) else $error("%d xz %d = %d", d1, d2, res);
             end
         end
     end
@@ -85,15 +119,15 @@ module full_adder
         output ret, gen, propagate
     );
 
-    wire prep_data2 = data2 ^ b_inv; // optionally inverts data2
-    wire carry = carry_in & ~ctrl.carry_disable;
-    wire b_inv = ctrl[0];
+    wire prep_data2 = data2 ^ ctrl.ctrl.b_inv; // optionally inverts data2
+    wire carry_disable = ctrl[2];
+    wire carry = carry_in & ~carry_disable;
 
     assign gen = data1 & prep_data2;
     assign propagate = data1 | prep_data2;
 
     wire i;
-    AND_gate_with_mux mux(gen, propagate, ctrl[3:2], i);
+    AND_gate_with_mux mux(gen, propagate, ctrl[1:0], i);
 
     assign ret = i ^ carry;
 endmodule
@@ -131,11 +165,10 @@ module full_adder_test;
     full_adder a(.*);
 
     initial begin
-        ctrl.b_inv = 0;
-        ctrl.carry_disable = 0;
-        ctrl.cmd = 0;
+        ctrl.ctrl.b_inv = 0;
+        ctrl.ctrl.cmd = 0;
 
-        $monitor("ctrl=%b carry_in=%b data1=%0d data2=%0d gen=%b propagate=%b ret=%b", ctrl, carry_in, data1, data2, gen, propagate, ret);
+        //~ $monitor("ctrl=%b carry_in=%b data1=%0d data2=%0d gen=%b propagate=%b ret=%b carry=%b", ctrl, carry_in, data1, data2, gen, propagate, ret, a.carry);
 
         #1
         data1 = 0;
@@ -152,5 +185,14 @@ module full_adder_test;
         #1
         data1 = 1;
         data2 = 1;
+
+        #1
+        ctrl.cmd = XOR;
+        carry_in = 1;
+
+        #1
+        data1 = 0;
+        data2 = 0;
+        ctrl.ctrl.cmd = SUB;
     end
 endmodule
