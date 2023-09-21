@@ -1,6 +1,6 @@
 typedef enum logic[4:0] {
     ADD  =5'b00000, // also left shift if A=B, AKA SLL
-    SUB  =5'b11000,
+    SUB  =5'b11000, // carry_out is inverted for SUB operations
     XOR  =5'bx0100,
     XNOR =5'bx1100, // also NOT, if A=0
     COMP =5'b01000, // A-B-1 operation, if A=B bit isn't set then established carry out bit means A>B, otherwise A<B
@@ -92,7 +92,6 @@ module alu_test;
                 ctrl.cmd = SUB;
                 #1
                 assert(d1 - d2 == res) else $error("%h - %h = %h carry=%b", d1, d2, res, a.carry);
-                // carry result is inverted for SUB operations
                 assert((d2 > d1) != carry_out) else $error("d1=%h d2=%h carry_out=%b", d1, d2, carry_out);
 
                 ctrl.cmd = XOR;
