@@ -90,7 +90,8 @@ module alu_test;
                 ctrl.cmd = SUB;
                 #1
                 assert(d1 - d2 == res) else $error("%h - %h = %h carry=%b", d1, d2, res, a.carry);
-                //~ assert((int'(d1) + d2 > 4'b1111) == carry_out) else $error("d1=%b d2=%b carry_out=%b", d1, d2, carry_out);
+                // carry result is inverted for SUB operations
+                assert((d2 > d1) != carry_out) else $error("d1=%h d2=%h carry_out=%b", d1, d2, carry_out);
 
                 ctrl.cmd = XOR;
                 #1
@@ -103,10 +104,6 @@ module alu_test;
                 ctrl.cmd = OR;
                 #1
                 assert((d1 | d2) == res) else $error("%b or %b = %b", d1, d2, res);
-
-                //~ ctrl.cmd = XZ;
-                //~ #1
-                //~ assert((d1 & d2) == res) else $error("%d xz %d = %d", d1, d2, res);
             end
         end
     end
