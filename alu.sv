@@ -1,9 +1,11 @@
 typedef enum logic[4:0] {
-    ADD=5'b00000,
-    SUB=5'b11000,
-    XOR=5'b00100,
-    AND=5'b00101,
-    OR =5'b00110
+    ADD  =5'b00000, // also left shift if A=B, AKA SLL
+    SUB  =5'b11000,
+    XOR  =5'bx0100,
+    XNOR =5'bx1100, // also NOT, if A=0
+    COMP =5'b01000, // A-B-1 operation, if A=B bit isn't set then established carry out bit means A>B, otherwise A<B
+    AND  =5'bx0101,
+    OR   =5'bx0110
 } AluCmd;
 
 typedef struct packed
@@ -97,9 +99,18 @@ module alu_test;
                 #1
                 assert(d1 ^ d2 == res) else $error("%b xor %b = %b", d1, d2, res);
 
+                ctrl.cmd = XNOR;
+                #1
+                assert(~(d1 ^ d2) == res) else $error("%b xnor %b = %b", d1, d2, res);
+
                 ctrl.cmd = AND;
                 #1
                 assert((d1 & d2) == res) else $error("%b and %b = %b", d1, d2, res);
+
+                ctrl.cmd = COMP;
+                #1
+                if(d1 != d2)
+                    assert((d1 > d2) == carry_out) else $error("%h > %h == %b", d1, d2, carry_out);
 
                 ctrl.cmd = OR;
                 #1
