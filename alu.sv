@@ -117,24 +117,23 @@ module alu_test;
             end
         end
     end
-endmodule;
+endmodule
 
 module full_adder
     (
         input data1, data2, carry_in,
-        input AluCtrl ctrl,
+        input AluCtrlInternal ctrl,
         output ret, gen, propagate
     );
 
-    wire prep_data2 = data2 ^ ctrl.ctrl.b_inv; // optionally inverts data2
-    wire carry_disable = ctrl[2];
-    wire carry = carry_in & ~carry_disable;
+    wire prep_data2 = data2 ^ ctrl.b_inv; // optionally inverts data2
+    wire carry = carry_in & ~ctrl.carry_disable;
 
     assign gen = data1 & prep_data2;
     assign propagate = data1 | prep_data2;
 
     wire i;
-    AND_gate_with_mux mux(gen, propagate, ctrl[1:0], i);
+    AND_gate_with_mux mux(gen, propagate, ctrl.cmd, i);
 
     assign ret = i ^ carry;
 endmodule
@@ -162,7 +161,7 @@ module mux_4to1 (
     );
 
     assign r = sel[1] ? (sel[0] ? d : c) : (sel[0] ? b : a);
-endmodule;
+endmodule
 
 module full_adder_test;
     bit data1, data2, carry_in;
