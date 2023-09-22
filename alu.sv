@@ -200,6 +200,6 @@ module full_adder_test;
         #1
         data1 = 0;
         data2 = 0;
-        ctrl.ctrl.cmd = SUB;
+        ctrl.cmd = SUB;
     end
 endmodule
