@@ -3,9 +3,10 @@ typedef enum logic[4:0] {
     SUB  =5'b11000, // carry_out is inverted for SUB operations
     XOR  =5'bx0100,
     XNOR =5'bx1100, // also NOT, if A=0
-    COMP =5'b01000, // A-B-1 operation, if A=B bit isn't set then established carry out bit means A>B, otherwise A<B
+    COMP =5'b01000, // A-B-1 operation, if A!=B then established carry out bit means A>B, otherwise A<B
     AND  =5'bx0101,
-    OR   =5'bx0110
+    OR   =5'bx0110,
+    RSHFT=5'b00111  // moves data2 bits to right (SLR), data1 is ignored
 } AluCmd;
 
 typedef struct packed
@@ -33,14 +34,18 @@ module alu
 
     wire[3:0] gen;
     wire[3:0] propagate;
+    wire[3:0] d2_possible_inverted;
     wire[4:0] carry;
 
     wire carry_in = ctrl.ctrl.carry_in;
     assign carry[0] = carry_in;
     assign carry_out = carry[4];
 
-    for(genvar i = 0; i < 4; i++)
-        full_adder fa(d1[i], d2[i], carry[i], ctrl, res[i], gen[i], propagate[i]);
+    for(genvar i = 0; i < 4; i++) begin
+        wire right_bit = (i < 3) ? d2_possible_inverted[i+1] : carry_in;
+
+        full_adder fa(d1[i], d2[i], carry[i], right_bit, ctrl, res[i], gen[i], propagate[i], d2_possible_inverted[i]);
+    end
 
     assign carry[1] = gen[0] ||
             (carry_in && propagate[0]);
@@ -80,9 +85,17 @@ module alu_test;
 
         //~ $monitor("ctrl=%b d1=%0d d2=%0d gen=%b propagate=%b carry=%b res=%0d res=%b carry_out=%b", ctrl, d1, d2, a.gen, a.propagate, a.carry, res, res, carry_out);
 
-        for(d1 = 0; d1 < 15; d1++)
+        for(d2 = 0; d2 < 15; d2++)
         begin
-            for(d2 = 0; d2 < 15; d2++)
+            ctrl.cmd = RSHFT;
+            #1
+            assert(d2 >> 1 == res) else $error("%b rshift = %b carry=%b", d2, res, a.carry);
+
+            ctrl.ctrl.carry_in = 1;
+            #1
+            assert((d2 >> 1) + 'b1000 == res) else $error("%b rshift = %b carry=%b", d2, res, a.carry);
+
+            for(d1 = 0; d1 < 15; d1++)
             begin
                 ctrl.cmd = ADD;
                 #1
@@ -121,33 +134,33 @@ endmodule
 
 module full_adder
     (
-        input data1, data2, carry_in,
+        input data1, data2, carry_in, direct_in /*can be bypassed to output*/,
         input AluCtrlInternal ctrl,
-        output ret, gen, propagate
+        output ret, gen, propagate, d2_possible_inverted
     );
 
-    wire prep_data2 = data2 ^ ctrl.b_inv; // optionally inverts data2
+    assign d2_possible_inverted = data2 ^ ctrl.b_inv; // optionally inverts data2
     wire carry = carry_in & ~ctrl.carry_disable;
 
-    assign gen = data1 & prep_data2;
-    assign propagate = data1 | prep_data2;
+    assign gen = data1 & d2_possible_inverted;
+    assign propagate = data1 | d2_possible_inverted;
 
     wire i;
-    AND_gate_with_mux mux(gen, propagate, ctrl.cmd, i);
+    AND_gate_with_mux mux(gen, propagate, direct_in, ctrl.cmd, i);
 
     assign ret = i ^ carry;
 endmodule
 
-// Some trick to utilize 2-level DCTL logic, need more work here
+// MUX used here to utilize 3-level DCTL logic
 module AND_gate_with_mux
     (
-        input from_AND, from_OR,
+        input from_AND, from_OR, direct_in,
         input[1:0] ctrl,
         output result
     );
 
     wire interm = ~from_AND & from_OR;
-    mux_4to1 m(result, interm, from_AND, from_OR, 1'bx /*unused*/, ctrl);
+    mux_4to1 m(result, interm, from_AND, from_OR, direct_in, ctrl);
 
 endmodule
 
@@ -164,9 +177,9 @@ module mux_4to1 (
 endmodule
 
 module full_adder_test;
-    bit data1, data2, carry_in;
+    bit data1, data2, carry_in, direct_in;
     AluCtrl ctrl;
-    logic ret, gen, propagate;
+    logic ret, gen, propagate, d2_possible_inverted;
 
     full_adder a(.*);
 
