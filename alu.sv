@@ -45,7 +45,17 @@ module alu
     for(genvar i = 0; i < 4; i++) begin
         wire right_bit = d2_possible_inverted[i+1];
 
-        full_adder fa(d1[i], d2[i], carry[i], right_bit, ctrl, res[i], gen[i], propagate[i], d2_possible_inverted[i]);
+        full_adder fa(
+            .data1(d1[i]),
+            .data2(d2[i]),
+            .carry_in(carry[i]),
+            .direct_in(right_bit),
+            .ctrl(ctrl),
+            .ret(res[i]),
+            .gen(gen[i]),
+            .propagate(propagate[i]),
+            .d2_possible_inverted(d2_possible_inverted[i])
+        );
     end
 
     assign carry[1] = gen[0] ||
