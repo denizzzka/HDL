@@ -90,44 +90,44 @@ module alu_test;
         begin
             ctrl.cmd = RSHFT;
             #1
-            assert(d2 >> 1 == res) else $error("%b rshift = %b carry=%b", d2, res, a.carry);
+            assert(d2 >> 1 == res); // else $error("%b rshift = %b carry=%b", d2, res, a.carry);
 
             ctrl.ctrl.carry_in = 1;
             #1
-            assert((d2 >> 1) + 'b1000 == res) else $error("%b rshift = %b carry=%b", d2, res, a.carry);
+            assert((d2 >> 1) + 'b1000 == res); // else $error("%b rshift = %b carry=%b", d2, res, a.carry);
 
             for(d1 = 0; d1 < 15; d1++)
             begin
                 ctrl.cmd = ADD;
                 #1
-                assert(d1 + d2 == res) else $error("%h + %h = %h carry=%b", d1, d2, res, a.carry);
-                assert((int'(d1) + d2 > 4'b1111) == carry_out) else $error("d1=%b d2=%b carry_out=%b", d1, d2, carry_out);
+                assert(d1 + d2 == res); // else $error("%h + %h = %h carry=%b", d1, d2, res, a.carry);
+                assert((16'(d1) + d2 > 4'b1111) == carry_out); // else $error("d1=%b d2=%b carry_out=%b", d1, d2, carry_out);
 
                 ctrl.cmd = SUB;
                 #1
-                assert(d1 - d2 == res) else $error("%h - %h = %h carry=%b", d1, d2, res, a.carry);
-                assert((d2 > d1) != carry_out) else $error("d1=%h d2=%h carry_out=%b", d1, d2, carry_out);
+                assert(d1 - d2 == res); // else $error("%h - %h = %h carry=%b", d1, d2, res, a.carry);
+                assert((d2 > d1) != carry_out); // else $error("d1=%h d2=%h carry_out=%b", d1, d2, carry_out);
 
                 ctrl.cmd = XOR;
                 #1
-                assert(d1 ^ d2 == res) else $error("%b xor %b = %b", d1, d2, res);
+                assert(d1 ^ d2 == res); // else $error("%b xor %b = %b", d1, d2, res);
 
                 ctrl.cmd = XNOR;
                 #1
-                assert(~(d1 ^ d2) == res) else $error("%b xnor %b = %b", d1, d2, res);
+                assert(~(d1 ^ d2) == res); // else $error("%b xnor %b = %b", d1, d2, res);
 
                 ctrl.cmd = AND;
                 #1
-                assert((d1 & d2) == res) else $error("%b and %b = %b", d1, d2, res);
+                assert((d1 & d2) == res); // else $error("%b and %b = %b", d1, d2, res);
 
                 ctrl.cmd = COMP;
                 #1
                 if(d1 != d2)
-                    assert((d1 > d2) == carry_out) else $error("%h > %h == %b", d1, d2, carry_out);
+                    assert((d1 > d2) == carry_out); // else $error("%h > %h == %b", d1, d2, carry_out);
 
                 ctrl.cmd = OR;
                 #1
-                assert((d1 | d2) == res) else $error("%b or %b = %b", d1, d2, res);
+                assert((d1 | d2) == res); // else $error("%b or %b = %b", d1, d2, res);
             end
         end
     end
