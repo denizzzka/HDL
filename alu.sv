@@ -166,25 +166,19 @@ endmodule
 module AND_gate_with_mux
     (
         input from_AND, from_OR, direct_in,
-        input[1:0] ctrl,
-        output result
+        input[1:0] cmd,
+        output logic r
     );
 
     wire interm = ~from_AND & from_OR;
-    mux_4to1 m(result, interm, from_AND, from_OR, direct_in, ctrl);
 
-endmodule
-
-module mux_4to1 (
-        output r,
-        input a,
-        input b,
-        input c,
-        input d,
-        input[1:0] sel
-    );
-
-    assign r = sel[1] ? (sel[0] ? d : c) : (sel[0] ? b : a);
+    always_comb
+        unique case(cmd)
+            'b00: r = interm;
+            'b01: r = from_AND;
+            'b10: r = from_OR;
+            'b11: r = direct_in;
+        endcase
 endmodule
 
 module full_adder_test;
