@@ -1,9 +1,12 @@
 import alu_::AluCmd;
 
-typedef enum logic[6:0] {
-    BRANCH = 7'b1100011, // Conditional Branches
-    OP_IMM = 7'b0010011, // Integer Register-Immediate Instructions
-    OP     = 7'b0110011 // Integer Register-Register Operations
+typedef enum logic[4:0] {
+    LOAD   = 5'b00000, //  Load Instructions
+    STORE  = 5'b01000, //  Store Instructions
+    BRANCH = 5'b11000, // Conditional Branches
+    OP_IMM = 5'b00100, // Integer Register-Immediate Instructions
+    OP     = 5'b01100, // Integer Register-Register Operations
+    LUI    = 5'b01101 // Integer Register-Register Operations
 } OpCode;
 
 typedef logic[4:0] RegAddr;
@@ -56,6 +59,7 @@ typedef struct packed
 {
     InstructionPayload ip;
     OpCode opCode;
+    logic[1:0] unused_always11;
 } Instruction;
 
 module instr_decoder
