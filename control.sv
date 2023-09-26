@@ -1,6 +1,7 @@
 import alu_::AluCmd;
 
 typedef enum logic[6:0] {
+    BRANCH = 7'b1100011, // Conditional Branches
     OP_IMM = 7'b0010011, // Integer Register-Immediate Instructions
     OP     = 7'b0110011 // Integer Register-Register Operations
 } OpCode;
@@ -24,10 +25,31 @@ typedef struct packed
     RegAddr dest_register; // rd
 } RegisterRegisterInstr;
 
+typedef struct packed
+{
+    logic[6:0] imm;
+    RegAddr source_register_2; // rs2
+    RegAddr source_register_1; // rs1
+    logic[2:0] functor; // func3
+    RegAddr dest_register; // rd
+} StoreInstr;
+
+typedef struct packed
+{
+    logic sign;
+    logic[5:0] offset_HighestPart;
+    RegAddr source_register_2; // rs2
+    RegAddr source_register_1; // rs1
+    logic[2:0] functor; // func3
+    logic[3:0] offset_LowestPart;
+    logic offset_MSB; // 0xef00 (3840 decimal) will be encoded as 0b0_1110000000_1
+} BranchingInstr;
+
 typedef union packed
 {
     RegisterImmediateInstr ri;
     RegisterRegisterInstr rr;
+    BranchingInstr b;
 } InstructionPayload;
 
 typedef struct packed
@@ -39,11 +61,15 @@ typedef struct packed
 module instr_decoder
     (
         input Instruction instr,
+        output OpCode opCode,
         output AluCmd aluCmd,
         output RegAddr source_register_1,
         output RegAddr source_register_2,
+        output logic signed[11:0] jumpAddr,
         output RegAddr register_out_addr
     );
+
+    assign opCode = instr.opCode;
 
     always_comb
         unique case(instr.ip.rr.functor)
@@ -56,6 +82,13 @@ module instr_decoder
             3'b110: aluCmd = OR;
             3'b111: aluCmd = AND;
         endcase
+
+    assign jumpAddr = {
+            instr.ip.b.sign,
+            instr.ip.b.offset_MSB,
+            instr.ip.b.offset_HighestPart,
+            instr.ip.b.offset_LowestPart
+        };
 
     always_comb
         unique case(instr.opCode)
@@ -75,18 +108,19 @@ endmodule
 module instr_decoder_test;
     logic[31:0] registers[32];
     Instruction instr;
+    OpCode opCode;
     AluCmd aluCmd;
     RegAddr reg_addr1;
     RegAddr reg_addr2;
     RegAddr reg_dst;
+    logic signed[11:0] jumpAddr;
     logic[31:0] ret;
 
     instr_decoder decoder(
-        instr,
-        aluCmd,
-        reg_addr1,
-        reg_addr2,
-        reg_dst
+        .source_register_1(reg_addr1),
+        .source_register_2(reg_addr2),
+        .register_out_addr(reg_dst),
+        .*
     );
 
     initial begin
