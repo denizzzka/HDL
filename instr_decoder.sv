@@ -1,5 +1,3 @@
-import alu_::AluCmd;
-
 typedef enum logic[4:0] {
     LOAD   = 5'b00000, // Load Instructions
     STORE  = 5'b01000, // Store Instructions
