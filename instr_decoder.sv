@@ -66,11 +66,29 @@ typedef struct packed
     logic[1:0] unused_always11;
 } Instruction;
 
+class en;
+    typedef enum logic[2:0] {
+        ADD  =3'b000,
+        SLL  =3'b001,
+        SLT  =3'b010,
+        SLTU =3'b011,
+        XOR  =3'b100,
+        SRLA =3'b101, // SRL / SRA (logical right shift / arithmetic right shift (the original sign bit is copied into the vacated upper bits)
+        OR   =3'b110,
+        AND  =3'b111
+    } RiscV_Spec_AluCmd;
+endclass;
+
+typedef struct packed {
+    AluCmd cmd;
+    logic isUnsignedCompOrLeftShift;
+} DecodedAluCmd;
+
 module instr_decoder
     (
         input Instruction instr,
         output OpCode opCode,
-        output AluCmd aluCmd,
+        output DecodedAluCmd aluCmd,
         output RegAddr source_register_1,
         output RegAddr source_register_2,
         output logic signed[11:0] jumpAddr,
@@ -80,16 +98,18 @@ module instr_decoder
     assign opCode = instr.opCode;
 
     always_comb
-        unique case(instr.ip.rr.functor)
-            3'b000: aluCmd = ADD;
-            3'b001: aluCmd = AND; //FIXME // SLL
-            3'b010: aluCmd = AND; //FIXME // SLT
-            3'b011: aluCmd = AND; //FIXME // SLTU
-            3'b100: aluCmd = XOR;
-            3'b101: aluCmd = AND; //FIXME // SRL / SRA (logical right shift / arithmetic right shift (the original sign bit is copied into the vacated upper bits)
-            3'b110: aluCmd = OR;
-            3'b111: aluCmd = AND;
+        unique case(en::RiscV_Spec_AluCmd'(instr.ip.rr.functor))
+            en::ADD:  aluCmd.cmd = ADD;
+            en::SLL:  aluCmd.cmd = ADD;
+            en::SLT:  aluCmd.cmd = COMP;
+            en::SLTU: aluCmd.cmd = COMP;
+            en::XOR:  aluCmd.cmd = XOR;
+            en::SRLA: aluCmd.cmd = RSHFT;
+            en::OR:   aluCmd.cmd = OR;
+            en::AND:  aluCmd.cmd = AND;
         endcase
+
+    assign aluCmd.isUnsignedCompOrLeftShift = instr.ip.rr.functor[0];
 
     assign jumpAddr = {
             instr.ip.b.sign,
@@ -117,7 +137,7 @@ module instr_decoder_test;
     logic[31:0] registers[32];
     Instruction instr;
     OpCode opCode;
-    AluCmd aluCmd;
+    DecodedAluCmd aluCmd;
     RegAddr reg_addr1;
     RegAddr reg_addr2;
     RegAddr reg_dst;
