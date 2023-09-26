@@ -1,3 +1,5 @@
+package alu_;
+
 typedef enum logic[4:0] {
     ADD  =5'b00000, // also left shift if A=B, AKA SLL
     SUB  =5'b11000, // carry_out is inverted for SUB operations
@@ -8,6 +10,10 @@ typedef enum logic[4:0] {
     OR   =5'bx0110,
     RSHFT=5'b00111  // moves data2 bits to right (SLR), data1 is ignored
 } AluCmd;
+
+endpackage;
+
+import alu_::*;
 
 typedef struct packed
 {
