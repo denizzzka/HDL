@@ -1,12 +1,16 @@
 import alu_::AluCmd;
 
 typedef enum logic[4:0] {
-    LOAD   = 5'b00000, //  Load Instructions
-    STORE  = 5'b01000, //  Store Instructions
-    BRANCH = 5'b11000, // Conditional Branches
+    LOAD   = 5'b00000, // Load Instructions
+    STORE  = 5'b01000, // Store Instructions
     OP_IMM = 5'b00100, // Integer Register-Immediate Instructions
     OP     = 5'b01100, // Integer Register-Register Operations
-    LUI    = 5'b01101 // Integer Register-Register Operations
+    LUI    = 5'b01101, // Load Upper Immediate
+    AUIPC  = 5'b00101, // Add Upper Immediate To PC
+    BRANCH = 5'b11000, // Conditional Branches
+    JAL    = 5'b11011, // Jump And Link
+    JALR   = 5'b11001, // Jump And Link Register
+    SYSTEM = 5'b11100  // Environment Call and Breakpoints
 } OpCode;
 
 typedef logic[4:0] RegAddr;
