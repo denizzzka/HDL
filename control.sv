@@ -4,7 +4,7 @@ module control
     );
 
     logic[31:0] pc;
-    logic[31:0] registers[32];
+    logic[31:0] registers[32]; //TODO: x0 register must be zero
     logic[31:0] mem[2048];
     logic[31:0] instr;
     wire OpCode opCode;
@@ -25,6 +25,34 @@ module control
         instr <= mem[pc];
         pc <= pc+2;
     end
+
+endmodule
+
+module loopOverAllNibbles
+    (
+        input wire clk,
+        input wire[31:0] word,
+        output wire[3:0] nibble
+    );
+
+    counter #(8) curr_nibble(reset, clk, val);
+
+    always_ff @(posedge clk) begin
+    end
+endmodule
+
+module counter
+    #(parameter WIDTH)
+    (
+        input wire reset,
+        input wire clk,
+        output wire[WIDTH-1:0] val
+    );
+
+    logic[WIDTH-1:0] val;
+
+    always_ff @(posedge clk)
+        val++;
 
 endmodule
 
