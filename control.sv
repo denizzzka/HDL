@@ -73,16 +73,17 @@ module loopOverAllNibbles_test;
     loopOverAllNibbles l(.*);
 
     initial begin
-        $monitor("clk=%b w1=%h w2=%h nibble_num=%h d1=%b d2=%b alu.ret=%b result=%h %b", clk, word1, word2, l.curr_nibble_idx, l.d1, l.d2, l.nibble_ret, result, result);
+        //~ $monitor("clk=%b w1=%h w2=%h nibble_num=%h d1=%b d2=%b alu.ret=%b result=%h %b", clk, word1, word2, l.curr_nibble_idx, l.d1, l.d2, l.nibble_ret, result, result);
 
-        clk = 0;
         word1 = 32'h_efff_ffff;
         word2 = 1;
 
-        repeat (16) begin
+        repeat (15) begin
             #1
             clk = ~clk;
         end
+
+        assert(result == 32'h_f000_0000);
     end
 endmodule
 
