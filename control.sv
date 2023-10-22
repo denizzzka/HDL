@@ -78,12 +78,22 @@ module loopOverAllNibbles_test;
         word1 = 32'h_efff_ffff;
         word2 = 1;
 
-        repeat (15) begin
+        repeat (16) begin
             #1
             clk = ~clk;
         end
 
         assert(result == 32'h_f000_0000);
+
+        word1 = 32'h_ffff_0fff;
+        word2 = 2;
+
+        repeat (15) begin
+            #1
+            clk = ~clk;
+        end
+
+        assert(result == 32'h_ffff_1001);
     end
 endmodule
 
