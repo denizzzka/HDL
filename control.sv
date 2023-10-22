@@ -37,29 +37,28 @@ module loopOverAllNibbles
     );
 
     localparam CNT_SIZE = 3;
-    logic[CNT_SIZE-1:0] curr_nibble;
-    logic reset;
+    logic[CNT_SIZE-1:0] curr_nibble_idx;
+    logic reset; //TODO: ?
 
-    counter #(CNT_SIZE) nibble_counter(reset, clk, curr_nibble);
+    counter #(CNT_SIZE) nibble_counter(reset, clk, curr_nibble_idx);
 
     wire[3:0] d1;
     wire[3:0] d2;
     bit carry;
     AluCtrl ctrl;
-    wire[3:0] res;
-    wire[31:0] nibble_applied;
+    wire[3:0] nibble_ret;
 
     // All MUXes can be implemented with one selector driver
-    nibble_mux mux1(word1, curr_nibble, d1);
-    nibble_mux mux2(word2, curr_nibble, d2);
+    nibble_mux mux1(word1, curr_nibble_idx, d1);
+    nibble_mux mux2(word2, curr_nibble_idx, d2);
 
-    alu a(.carry_out(carry), .*);
+    alu a(.carry_out(carry), .res(nibble_ret), .*);
 
-    nibble_demux dmx(result, curr_nibble, res, nibble_applied);
+    wire[31:0] ret_unstored;
+    nibble_demux nibble_set(result, curr_nibble_idx, nibble_ret, ret_unstored);
 
-    always_ff @(posedge clk) begin;
-        result <= nibble_applied; //FIXME: store nibble after ALU, not whole word
-    end
+    always_ff @(posedge clk)
+        result <= ret_unstored;
 
 endmodule
 
@@ -72,7 +71,7 @@ module loopOverAllNibbles_test;
     loopOverAllNibbles l(.*);
 
     initial begin
-        $monitor("clk=%b w1=%h w2=%h nibble_num=%h result=%h %b", clk, word1, word2, l.curr_nibble, result, result);
+        $monitor("clk=%b w1=%h w2=%h nibble_num=%h d1=%b d2=%b alu.ret=%b result=%h %b", clk, word1, word2, l.curr_nibble_idx, l.d1, l.d2, l.nibble_ret, result, result);
 
         clk = 0;
         word1 = 32'h_efff_ffff;
@@ -112,7 +111,7 @@ endmodule
 
 module nibble_demux
     (
-        input wire[31:0] word,
+        input wire[31:0] in,
         input wire[2:0] select,
         input wire[3:0] nibble,
         output logic[31:0] ret
@@ -123,12 +122,12 @@ module nibble_demux
         wire[31:0] r;
 
         if(i > 0)
-            assign r[i*4-1:0] = word[i*4-1:0];
+            assign r[i*4-1:0] = in[i*4-1:0];
 
         assign r[i*4+3:i*4] = nibble;
 
         if(i < 7)
-            assign r[31:i*4+4] = word[31:i*4+4];
+            assign r[31:i*4+4] = in[31:i*4+4];
     end
 
     always_comb
