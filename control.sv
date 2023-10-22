@@ -44,7 +44,7 @@ module loopOverAllNibbles
 
     wire[3:0] d1;
     wire[3:0] d2;
-    bit carry;
+    wire carry_out;
     AluCtrl ctrl;
     wire[3:0] nibble_ret;
 
@@ -52,13 +52,15 @@ module loopOverAllNibbles
     nibble_mux mux1(word1, curr_nibble_idx, d1);
     nibble_mux mux2(word2, curr_nibble_idx, d2);
 
-    alu a(.carry_out(carry), .res(nibble_ret), .*);
+    alu a(.res(nibble_ret), .*);
 
     wire[31:0] ret_unstored;
     nibble_demux nibble_set(result, curr_nibble_idx, nibble_ret, ret_unstored);
 
-    always_ff @(posedge clk)
+    always_ff @(posedge clk) begin
         result <= ret_unstored;
+        ctrl.ctrl.carry_in <= carry_out;
+    end
 
 endmodule
 
