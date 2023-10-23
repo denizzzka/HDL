@@ -77,43 +77,36 @@ module loopOverAllNibbles_test;
 
     loopOverAllNibbles l(.*);
 
-    initial begin
-        //~ $monitor("clk=%b w1=%h w2=%h nibble_num=%h d1=%b d2=%b alu.ret=%b result=%h %b", clk, word1, word2, l.curr_nibble_idx, l.d1, l.d2, l.nibble_ret, result, result);
+    task loop_one_word
+        (
+            input AluCmd cmd,
+            input[31:0] w1,
+            input[31:0] w2
+        );
 
-        word1 = 32'h_efff_ffff;
-        word2 = 1;
-
-        repeat (16) begin
-            #1
-            clk = ~clk;
-        end
-
-        assert(result == 32'h_f000_0000);
-
-        word1 = 32'h_ffff_0fff;
-        word2 = 2;
-
-        repeat (16) begin
-            #1
-            clk = ~clk;
-        end
-
-        assert(result == 32'h_ffff_1001);
+        direction = (cmd == RSHFT) ? 1 : 0;
+        word1 = w1;
+        word2 = w2;
 
         result = 0;
         ctrl = 0;
-        ctrl.cmd = RSHFT;
-        direction = 1;
-        word2 = RSH_VAL;
-
-        //~ $monitor("w2=%b nibble_num=%h d2=%b alu.ret=%b carry=%b result=%h %b", word2, l.curr_nibble_idx, l.d2, l.nibble_ret, l.carry_out, result, result);
+        ctrl.cmd = cmd;
 
         repeat (16) begin
             #1
             clk = ~clk;
         end
+    endtask
 
-        assert(result == RSH_VAL >> 1); else $error("d2=%h result=%h must be=%h", l.d2, result, RSH_VAL >> 1);
+    initial begin
+        loop_one_word(ADD, 'h_efff_ffff, 1);
+        assert(result == 'h_f000_0000); else $error("result=%b", result);
+
+        loop_one_word(ADD, 'h_ffff_0fff, 2);
+        assert(result == 'h_ffff_1001);
+
+        loop_one_word(RSHFT, 'h_xxxx_xxxx, RSH_VAL);
+        assert(result == RSH_VAL >> 1); else $error("word2=%b result=%b must be=%b", word2, result, RSH_VAL >> 1);
     end
 endmodule
 
