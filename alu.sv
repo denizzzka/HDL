@@ -80,6 +80,7 @@ module alu
         );
 endmodule
 
+// Usable for immediate A==B compare during A-B-1 operation
 module check_if_0xF (input [3:0] in, output ret);
     assign ret = (in == 'hf);
 endmodule
