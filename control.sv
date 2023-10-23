@@ -31,6 +31,8 @@ endmodule
 module loopOverAllNibbles
     (
         input wire clk,
+        input wire direction, // 1 is reverse (from MSB to LSB)
+        ref wire AluCtrl ctrl,
         input wire[31:0] word1,
         input wire[31:0] word2,
         output logic[31:0] result
@@ -40,12 +42,11 @@ module loopOverAllNibbles
     logic[CNT_SIZE-1:0] curr_nibble_idx;
     logic reset; //TODO: ?
 
-    counter #(CNT_SIZE) nibble_counter(reset, clk, curr_nibble_idx);
+    counter #(CNT_SIZE) nibble_counter(reset, clk, direction, curr_nibble_idx);
 
     wire[3:0] d1;
     wire[3:0] d2;
     wire carry_out;
-    AluCtrl ctrl;
     wire[3:0] nibble_ret;
 
     // All MUXes can be implemented with one selector driver
@@ -59,13 +60,17 @@ module loopOverAllNibbles
 
     always_ff @(posedge clk) begin
         result <= ret_unstored;
-        ctrl.ctrl.carry_in <= carry_out;
+        ctrl.ctrl.carry_in <= direction ? d2[0] : carry_out;
     end
 
 endmodule
 
 module loopOverAllNibbles_test;
+    localparam RSH_VAL = 32'h_0600_0000;
+
     logic clk;
+    AluCtrl ctrl;
+    logic direction;
     logic[31:0] word1;
     logic[31:0] word2;
     logic[31:0] result;
@@ -88,12 +93,27 @@ module loopOverAllNibbles_test;
         word1 = 32'h_ffff_0fff;
         word2 = 2;
 
-        repeat (15) begin
+        repeat (16) begin
             #1
             clk = ~clk;
         end
 
         assert(result == 32'h_ffff_1001);
+
+        result = 0;
+        ctrl = 0;
+        ctrl.cmd = RSHFT;
+        direction = 1;
+        word2 = RSH_VAL;
+
+        //~ $monitor("w2=%b nibble_num=%h d2=%b alu.ret=%b carry=%b result=%h %b", word2, l.curr_nibble_idx, l.d2, l.nibble_ret, l.carry_out, result, result);
+
+        repeat (16) begin
+            #1
+            clk = ~clk;
+        end
+
+        assert(result == RSH_VAL >> 1); else $error("d2=%h result=%h must be=%h", l.d2, result, RSH_VAL >> 1);
     end
 endmodule
 
@@ -161,11 +181,15 @@ module counter
     (
         input wire reset,
         input wire clk,
+        input wire direction,
         output logic[WIDTH-1:0] val
     );
 
     always_ff @(posedge clk)
-        val++;
+        if(direction)
+            val--;
+        else
+            val++;
 
 endmodule
 
