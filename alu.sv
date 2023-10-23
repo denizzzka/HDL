@@ -80,15 +80,21 @@ module alu
         );
 endmodule
 
+module check_if_0xF (input [3:0] in, output ret);
+    assign ret = (in == 'hf);
+endmodule
+
 module alu_test;
     logic[3:0] d1;
     logic[3:0] d2;
     bit carry_in;
     logic carry_out;
+    logic res_is_0xF;
     AluCtrl ctrl;
     logic[3:0] res;
 
     alu a(.*);
+    check_if_0xF res_chk(res, res_is_0xF);
 
     initial begin
         ctrl.ctrl.b_inv = 0;
@@ -112,6 +118,7 @@ module alu_test;
                 #1
                 assert(d1 + d2 == res); else $error("%h + %h = %h carry=%b", d1, d2, res, carry_out);
                 assert((16'(d1) + 16'(d2) > 16'b1111) == carry_out); else $error("d1=%b d2=%b carry_out=%b", d1, d2, carry_out);
+                assert((res == 'b1111) == res_is_0xF);
 
                 ctrl.cmd = SUB;
                 #1
