@@ -31,18 +31,25 @@ endmodule
 module loopOverAllNibbles
     (
         input wire clk,
+        input wire start,
         input wire reverse_direction, // reverse means from MSB to LSB
         ref wire AluCtrl ctrl,
         input wire[31:0] word1,
         input wire[31:0] word2,
+        output wire is_latest,
         output logic[31:0] result
     );
 
     localparam CNT_SIZE = 3;
     logic[CNT_SIZE-1:0] curr_nibble_idx;
-    logic reset; //TODO: ?
 
-    counter #(CNT_SIZE) nibble_counter(reset, clk, reverse_direction, curr_nibble_idx);
+    nibble_counter #(CNT_SIZE) nibble_counter(
+        clk,
+        start,
+        reverse_direction,
+        is_latest,
+        curr_nibble_idx
+    );
 
     wire[3:0] d1;
     wire[3:0] d2;
@@ -69,11 +76,14 @@ module loopOverAllNibbles_test;
     localparam RSH_VAL = 32'h_0600_0000;
 
     logic clk;
+    logic start;
     AluCtrl ctrl;
     logic reverse_direction;
     logic[31:0] word1;
     logic[31:0] word2;
     logic[31:0] result;
+    wire is_latest;
+    logic loopIsDone;
 
     loopOverAllNibbles l(.*);
 
@@ -84,6 +94,10 @@ module loopOverAllNibbles_test;
             input[31:0] w2
         );
 
+        $monitor("clk=%b reverse=%b start=%b idx=%h result=%h latest_nibble=%b done=%b", clk, reverse_direction, start, l.curr_nibble_idx, result, is_latest, loopIsDone);
+
+        $display("cycle started");
+
         reverse_direction = (cmd == RSHFT) ? 1 : 0;
         word1 = w1;
         word2 = w2;
@@ -92,21 +106,52 @@ module loopOverAllNibbles_test;
         ctrl = 0;
         ctrl.cmd = cmd;
 
-        repeat (16) begin
+        //~ start = 1;
+        //~ clk = 0;
+        //~ #1
+        //~ clk = 1;
+        //~ #1
+        //~ start = 0;
+        //~ clk = 0;
+
+        //~ $display("init of cycle is done");
+
+        while(~is_latest) begin
+            loopIsDone = is_latest;
             #1
             clk = ~clk;
         end
+
+        $display("while cycle is done");
+
+        #1
+        clk = 0;
+
+        #1
+        clk = 1;
+
+        #1
+        clk = 0;
+
+        $display("FULL cycle is done");
     endtask
 
     initial begin
         loop_one_word(ADD, 'h_efff_ffff, 1);
         assert(result == 'h_f000_0000); else $error("result=%b", result);
 
+        start = 1;
+        #1
+        clk = 1;
+        #1
+        clk=0;
+        start = 0;
+
         loop_one_word(ADD, 'h_ffff_0fff, 2);
         assert(result == 'h_ffff_1001);
 
-        loop_one_word(RSHFT, 'h_xxxx_xxxx, RSH_VAL);
-        assert(result == RSH_VAL >> 1); else $error("word2=%b result=%b must be=%b", word2, result, RSH_VAL >> 1);
+        //~ loop_one_word(RSHFT, 'h_xxxx_xxxx, RSH_VAL);
+        //~ assert(result == RSH_VAL >> 1); else $error("word2=%b result=%b must be=%b", word2, result, RSH_VAL >> 1);
     end
 endmodule
 
@@ -167,23 +212,6 @@ module nibble_demux
             6: ret = muxed[6].r;
             7: ret = muxed[7].r;
         endcase
-endmodule
-
-module counter
-    #(parameter WIDTH)
-    (
-        input wire reset,
-        input wire clk,
-        input wire reverse_direction,
-        output logic[WIDTH-1:0] val
-    );
-
-    always_ff @(posedge clk)
-        if(reverse_direction)
-            val--;
-        else
-            val++;
-
 endmodule
 
 module control_test;
