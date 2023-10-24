@@ -94,11 +94,15 @@ module loopOverAllNibbles_test;
             input[31:0] w2
         );
 
-        $monitor("clk=%b reverse=%b start=%b idx=%h result=%h latest_nibble=%b done=%b", clk, reverse_direction, start, l.curr_nibble_idx, result, is_latest, loopIsDone);
+        //~ $monitor("clk=%b reverse=%b start=%b idx=%h ctrl=%b d1=%h d2=%h nibble_ret=%h result=%h latest_nibble=%b done=%b",
+            //~ clk, reverse_direction, start, l.curr_nibble_idx, ctrl, l.d1, l.d2, l.nibble_ret, result, is_latest, loopIsDone);
 
-        $display("cycle started");
+        //~ $display("cycle started");
+
+        assert(clk == 0);
 
         reverse_direction = (cmd == RSHFT) ? 1 : 0;
+        start = 1;
         word1 = w1;
         word2 = w2;
 
@@ -106,13 +110,14 @@ module loopOverAllNibbles_test;
         ctrl = 0;
         ctrl.cmd = cmd;
 
-        //~ start = 1;
-        //~ clk = 0;
-        //~ #1
-        //~ clk = 1;
-        //~ #1
-        //~ start = 0;
-        //~ clk = 0;
+        //~ $display("cmd assigned");
+
+        #1
+        clk = 1;
+        #1
+        start = 0;
+        ctrl.ctrl.carry_in = 0;
+        clk=0;
 
         //~ $display("init of cycle is done");
 
@@ -122,7 +127,7 @@ module loopOverAllNibbles_test;
             clk = ~clk;
         end
 
-        $display("while cycle is done");
+        //~ $display("while cycle is done");
 
         #1
         clk = 0;
@@ -133,25 +138,18 @@ module loopOverAllNibbles_test;
         #1
         clk = 0;
 
-        $display("FULL cycle is done");
+        //~ $display("FULL cycle is done");
     endtask
 
     initial begin
         loop_one_word(ADD, 'h_efff_ffff, 1);
         assert(result == 'h_f000_0000); else $error("result=%b", result);
 
-        start = 1;
-        #1
-        clk = 1;
-        #1
-        clk=0;
-        start = 0;
-
         loop_one_word(ADD, 'h_ffff_0fff, 2);
         assert(result == 'h_ffff_1001);
 
-        //~ loop_one_word(RSHFT, 'h_xxxx_xxxx, RSH_VAL);
-        //~ assert(result == RSH_VAL >> 1); else $error("word2=%b result=%b must be=%b", word2, result, RSH_VAL >> 1);
+        loop_one_word(RSHFT, 'h_xxxx_xxxx, RSH_VAL);
+        assert(result == RSH_VAL >> 1); else $error("word2=%b result=%b must be=%b", word2, result, RSH_VAL >> 1);
     end
 endmodule
 
