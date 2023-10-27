@@ -1,3 +1,8 @@
+typedef enum {
+    INSTR_DECODE,
+    ADD_IMMUTABLE
+} ControlState;
+
 module control
     (
         input wire clk
@@ -14,7 +19,6 @@ module control
     wire RegAddr rs1;
     wire RegAddr rs2;
     wire RegAddr rd;
-    logic[31:0] unsaved_result;
 
     instr_decoder idc(
             .source_register_1(rs1),
@@ -23,15 +27,30 @@ module control
             .*
         );
 
+    logic start;
+    wire reverse_direction; // reverse means from MSB to LSB
+    AluCtrl alu_ctrl;
+    logic[31:0] alu_w1;
+    logic[31:0] alu_w2;
+    wire busy;
+    logic[31:0] result;
+
+    loopOverAllNibbles l(.ctrl(alu_ctrl), .word1(alu_w1), .word2(alu_w2), .*);
+
     always_comb
         unique case(opCode)
             OP_IMM: begin
-                unsaved_result = register_file[rs1] + immutable_value; // FIXME: use ALU instead of "plus"
+                alu_w1 = register_file[rs1];
+                alu_w2 = immutable_value;
             end
 
             LOAD: begin
                 unique case(instr.ip.ri.funct3.width)
-                    BITS32: unsaved_result = mem[register_file[rs1]] + 32'(immutable_value); // FIXME: use ALU instead of "plus"
+                    //TODO: add ability to loop only over 1 and 2 bytes
+                    BITS32: begin
+                        alu_w1 = mem[register_file[rs1]];
+                        alu_w2 = immutable_value;
+                    end
 
                     default: begin end // FIXME: remove this line
                 endcase
@@ -44,7 +63,7 @@ module control
     always_ff @(posedge clk) begin
         instr <= mem[pc];
         //~ pc <= pc+2;
-        register_file[rd] <= unsaved_result;
+        register_file[rd] <= result;
     end
 
 endmodule
@@ -66,7 +85,7 @@ module control_test;
         foreach(rom[i])
             c.mem[i] = rom[i];
 
-        $monitor("clk=%b pc=%h inst=%h opCode=%b rs1=%h internal_imm=%h imm=%h uns_ret=%h", clk, c.pc, c.instr, c.opCode, c.rs1, c.instr.ip.ri.imm11, c.immutable_value, c.unsaved_result);
+        $monitor("clk=%b pc=%h inst=%h opCode=%b rs1=%h internal_imm=%h imm=%h ret=%h", clk, c.pc, c.instr, c.opCode, c.rs1, c.instr.ip.ri.imm11, c.immutable_value, c.result);
         //~ $readmemh("instr.txt", c.mem);
         //~ $dumpfile("control_test.vcd");
         //~ $dumpvars(0, control_test);
