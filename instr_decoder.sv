@@ -29,7 +29,7 @@ typedef struct packed
 {
     logic[11:0] imm11;
     RegAddr source_register_1; // rs1
-    Funct3 functor;
+    Funct3 funct3;
     RegAddr dest_register; // rd
 } RegisterImmediateInstr;
 
@@ -101,7 +101,8 @@ module instr_decoder
         output DecodedAluCmd aluCmd,
         output RegAddr source_register_1,
         output RegAddr source_register_2,
-        output logic signed[11:0] jumpAddr,
+        output wire[11:0] immutable_value,
+        output logic signed[11:0] jumpAddr, //TODO: remove?
         output RegAddr register_out_addr
     );
 
@@ -130,11 +131,16 @@ module instr_decoder
 
     always_comb
         unique case(instr.opCode)
-            OP_IMM: begin
+            LOAD,
+            OP_IMM:
+            begin
                 source_register_1 = instr.ip.ri.source_register_1;
                 register_out_addr = instr.ip.ri.dest_register;
+                immutable_value = instr.ip.ri.imm11;
             end
-            OP: begin
+
+            OP:
+            begin
                 register_out_addr = instr.ip.rr.dest_register;
             end
 
