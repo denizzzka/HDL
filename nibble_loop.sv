@@ -6,13 +6,15 @@ module loopOverAllNibbles
         ref wire AluCtrl ctrl,
         input wire[31:0] word1,
         input wire[31:0] word2,
-        output wire is_latest,
+        output wire busy,
         output logic[31:0] result
     );
 
     localparam CNT_SIZE = 3;
     logic[CNT_SIZE-1:0] curr_nibble_idx;
+    wire is_latest;
     logic perm_to_count;
+    assign busy = perm_to_count;
 
     nibble_counter #(CNT_SIZE) nibble_counter(
         clk,
@@ -60,8 +62,7 @@ module loopOverAllNibbles_test;
     logic[31:0] word1;
     logic[31:0] word2;
     logic[31:0] result;
-    wire is_latest;
-    logic loopIsDone;
+    wire busy;
 
     loopOverAllNibbles l(.*);
 
@@ -72,8 +73,8 @@ module loopOverAllNibbles_test;
             input[31:0] w2
         );
 
-        //~ $monitor("clk=%b reverse=%b start=%b idx=%h ctrl=%b d1=%h d2=%h nibble_ret=%h result=%h latest_nibble=%b done=%b",
-            //~ clk, reverse_direction, start, l.curr_nibble_idx, ctrl, l.d1, l.d2, l.nibble_ret, result, is_latest, loopIsDone);
+        //~ $monitor("clk=%b reverse=%b start=%b idx=%h ctrl=%b d1=%h d2=%h nibble_ret=%h result=%h busy=%b",
+            //~ clk, reverse_direction, start, l.curr_nibble_idx, ctrl, l.d1, l.d2, l.nibble_ret, result, busy);
 
         //~ $display("cycle started");
 
@@ -99,24 +100,14 @@ module loopOverAllNibbles_test;
 
         //~ $display("init of cycle is done");
 
-        while(~is_latest) begin
-            loopIsDone = is_latest;
+        while(busy) begin
             #1
             clk = ~clk;
         end
 
+        assert(clk == 0);
+
         //~ $display("while cycle is done");
-
-        #1
-        clk = 0;
-
-        #1
-        clk = 1;
-
-        #1
-        clk = 0;
-
-        //~ $display("FULL cycle is done");
     endtask
 
     initial begin
