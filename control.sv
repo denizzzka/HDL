@@ -8,7 +8,7 @@ module control
     logic[7:0][31:0] mem;
     Instruction instr;
     wire OpCode opCode;
-    wire DecodedAluCmd aluCmd;
+    wire DecodedAluCmd decodedAluCmd;
     wire signed[11:0] jumpAddr;
     wire[31:0] immutable_value;
     wire RegAddr rs1;

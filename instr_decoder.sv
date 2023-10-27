@@ -91,7 +91,7 @@ class en;
 endclass;
 
 typedef struct packed {
-    AluCmd cmd;
+    AluCtrl ctrl;
     logic isUnsignedCompOrLeftShift;
 } DecodedAluCmd;
 
@@ -99,7 +99,7 @@ module instr_decoder
     (
         input Instruction instr,
         output OpCode opCode,
-        output DecodedAluCmd aluCmd,
+        output DecodedAluCmd decodedAluCmd,
         output RegAddr source_register_1,
         output RegAddr source_register_2,
         output wire[31:0] immutable_value,
@@ -111,17 +111,17 @@ module instr_decoder
 
     always_comb
         unique case(en::RiscV_Spec_AluCmd'(instr.ip.rr.functor))
-            en::ADD:  aluCmd.cmd = ADD;
-            en::SLL:  aluCmd.cmd = ADD;
-            en::SLT:  aluCmd.cmd = COMP;
-            en::SLTU: aluCmd.cmd = COMP;
-            en::XOR:  aluCmd.cmd = XOR;
-            en::SRLA: aluCmd.cmd = RSHFT;
-            en::OR:   aluCmd.cmd = OR;
-            en::AND:  aluCmd.cmd = AND;
+            en::ADD:  decodedAluCmd.ctrl = ADD;
+            en::SLL:  decodedAluCmd.ctrl = ADD;
+            en::SLT:  decodedAluCmd.ctrl = COMP;
+            en::SLTU: decodedAluCmd.ctrl = COMP;
+            en::XOR:  decodedAluCmd.ctrl = XOR;
+            en::SRLA: decodedAluCmd.ctrl = RSHFT;
+            en::OR:   decodedAluCmd.ctrl = OR;
+            en::AND:  decodedAluCmd.ctrl = AND;
         endcase
 
-    assign aluCmd.isUnsignedCompOrLeftShift = instr.ip.rr.functor[0];
+    assign decodedAluCmd.isUnsignedCompOrLeftShift = instr.ip.rr.functor[0];
 
     assign jumpAddr = {
             instr.ip.b.sign,
