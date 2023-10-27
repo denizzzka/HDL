@@ -101,7 +101,7 @@ module instr_decoder
         output DecodedAluCmd aluCmd,
         output RegAddr source_register_1,
         output RegAddr source_register_2,
-        output wire[11:0] immutable_value,
+        output wire[31:0] immutable_value,
         output logic signed[11:0] jumpAddr, //TODO: remove?
         output RegAddr register_out_addr
     );
@@ -136,7 +136,7 @@ module instr_decoder
             begin
                 source_register_1 = instr.ip.ri.source_register_1;
                 register_out_addr = instr.ip.ri.dest_register;
-                immutable_value = instr.ip.ri.imm11;
+                immutable_value = 32'(instr.ip.ri.imm11);
             end
 
             OP:

@@ -10,7 +10,7 @@ module control
     wire OpCode opCode;
     wire DecodedAluCmd aluCmd;
     wire signed[11:0] jumpAddr;
-    wire[11:0] immutable_value;
+    wire[31:0] immutable_value;
     wire RegAddr rs1;
     wire RegAddr rs2;
     wire RegAddr rd;
@@ -26,7 +26,7 @@ module control
     always_comb
         unique case(opCode)
             OP_IMM: begin
-                unsaved_result = register_file[rs1] + 32'(immutable_value); // FIXME: use ALU instead of "plus"
+                unsaved_result = register_file[rs1] + immutable_value; // FIXME: use ALU instead of "plus"
             end
 
             LOAD: begin
