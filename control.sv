@@ -28,7 +28,6 @@ module control
         );
 
     logic start;
-    wire reverse_direction; // reverse means from MSB to LSB
     AluCtrl alu_ctrl;
     logic[31:0] alu_w1;
     logic[31:0] alu_w2;

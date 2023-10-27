@@ -2,7 +2,6 @@ module loopOverAllNibbles
     (
         input wire clk,
         input wire start,
-        input wire reverse_direction, // reverse means from MSB to LSB
         ref wire AluCtrl ctrl,
         input wire[31:0] word1,
         input wire[31:0] word2,
@@ -11,6 +10,10 @@ module loopOverAllNibbles
     );
 
     localparam CNT_SIZE = 3;
+
+    // "reverse" means from MSB to LSB
+    wire reverse_direction;
+    assign reverse_direction = (ctrl.cmd == RSHFT) ? 1 : 0;
     logic[CNT_SIZE-1:0] curr_nibble_idx;
     wire is_latest;
     logic perm_to_count;
@@ -58,7 +61,6 @@ module loopOverAllNibbles_test;
     logic clk;
     logic start;
     AluCtrl ctrl;
-    logic reverse_direction;
     logic[31:0] word1;
     logic[31:0] word2;
     logic[31:0] result;
@@ -80,7 +82,6 @@ module loopOverAllNibbles_test;
 
         assert(clk == 0);
 
-        reverse_direction = (cmd == RSHFT) ? 1 : 0;
         start = 1;
         word1 = w1;
         word2 = w2;
