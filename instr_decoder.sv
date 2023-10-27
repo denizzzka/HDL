@@ -13,11 +13,23 @@ typedef enum logic[4:0] {
 
 typedef logic[4:0] RegAddr;
 
+typedef enum logic[1:0] {
+    BITS8 =  'b00,
+    BITS16 = 'b01,
+    BITS32 = 'b10
+} LoadStoreResultWidth;
+
+typedef struct packed
+{
+    logic isSigned;
+    LoadStoreResultWidth width;
+} Funct3;
+
 typedef struct packed
 {
     logic[11:0] imm11;
     RegAddr source_register_1; // rs1
-    logic[2:0] functor; // func3
+    Funct3 functor;
     RegAddr dest_register; // rd
 } RegisterImmediateInstr;
 
