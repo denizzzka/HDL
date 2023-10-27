@@ -12,14 +12,22 @@ module loopOverAllNibbles
 
     localparam CNT_SIZE = 3;
     logic[CNT_SIZE-1:0] curr_nibble_idx;
+    logic perm_to_count;
 
     nibble_counter #(CNT_SIZE) nibble_counter(
         clk,
-        start,
+        perm_to_count,
         reverse_direction,
         is_latest,
         curr_nibble_idx
     );
+
+    always_ff @(posedge clk)
+        if(start)
+            perm_to_count <= 1;
+        else
+            if(is_latest)
+                perm_to_count <= 0;
 
     wire[3:0] d1;
     wire[3:0] d2;
