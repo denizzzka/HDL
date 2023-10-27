@@ -16,7 +16,8 @@ typedef logic[4:0] RegAddr;
 typedef enum logic[1:0] {
     BITS8 =  'b00,
     BITS16 = 'b01,
-    BITS32 = 'b10
+    BITS32 = 'b10,
+    ERRVAL = 'b11
 } LoadStoreResultWidth;
 
 typedef struct packed
