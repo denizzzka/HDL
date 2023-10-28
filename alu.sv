@@ -23,15 +23,23 @@ typedef union packed
     AluCtrlInternal ctrl;
 } AluCtrl;
 
-//TODO: add ALU args struct
+typedef struct packed
+{
+    logic[3:0] d1;
+    logic[3:0] d2;
+    AluCtrl ctrl;
+} AluArgs;
+
+typedef struct packed
+{
+    logic[3:0] res;
+    logic carry_out;
+} AluRet;
 
 module alu
     (
-        input[3:0] d1,
-        input[3:0] d2,
-        input AluCtrl ctrl,
-        output[3:0] res,
-        output carry_out
+        input AluArgs args,
+        output AluRet ret
     );
 
     wire[3:0] gen;
@@ -39,21 +47,21 @@ module alu
     wire[4:0] d2_possible_inverted;
     wire[4:0] carry;
 
-    wire carry_in = ctrl.ctrl.carry_in;
+    wire carry_in = args.ctrl.ctrl.carry_in;
     assign carry[0] = carry_in;
-    assign carry_out = carry[4];
+    assign ret.carry_out = carry[4];
     assign d2_possible_inverted[4] = carry_in;
 
     for(genvar i = 0; i < 4; i++) begin
         wire right_bit = d2_possible_inverted[i+1];
 
         full_adder fa(
-            .data1(d1[i]),
-            .data2(d2[i]),
+            .data1(args.d1[i]),
+            .data2(args.d2[i]),
             .carry_in(carry[i]),
             .direct_in(right_bit),
-            .ctrl(ctrl),
-            .ret(res[i]),
+            .ctrl(args.ctrl),
+            .ret(ret.res[i]),
             .gen(gen[i]),
             .propagate(propagate[i]),
             .d2_possible_inverted(d2_possible_inverted[i])
@@ -88,12 +96,22 @@ module check_if_0xF (input [3:0] in, output ret);
 endmodule
 
 module alu_test;
+    AluArgs args;
+    AluRet ret;
+
     logic[3:0] d1;
     logic[3:0] d2;
-    logic carry_out;
+    assign args.d1 = d1;
+    assign args.d2 = d2;
+
+    wire carry_out = ret.carry_out;
+
     logic res_is_0xF;
+
     AluCtrl ctrl;
-    logic[3:0] res;
+    assign args.ctrl = ctrl;
+
+    wire[3:0] res = ret.res;
 
     alu a(.*);
     check_if_0xF res_chk(res, res_is_0xF);
@@ -111,7 +129,7 @@ module alu_test;
 
             ctrl.ctrl.carry_in = 1;
             #1
-            assert((d2 >> 1) + 'b1000 == res); // else $error("%b rshift = %b carry=%b", d2, res, a.carry);
+            assert((d2 >> 1) + 'b1000 == res); else $error("%b rshift = %b carry=%b", d2, res, a.carry);
 
             d1 = 0; // TODO: Why d1 = 0 inside of "for" loop isn't works as expected?
             for(d1 = 0; d1 < 15; d1++)
