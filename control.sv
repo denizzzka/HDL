@@ -58,7 +58,7 @@ module control
             .*
         );
 
-    wire perm_to_count = (currState == ADD_IMMUTABLE) ? 1 : 0;
+    wire perm_to_count = (currState == ADD_IMMUTABLE);
     AluCtrl alu_ctrl;
     logic[31:0] alu_w1;
     logic[31:0] alu_w2;
