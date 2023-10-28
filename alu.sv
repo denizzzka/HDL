@@ -90,7 +90,6 @@ endmodule
 module alu_test;
     logic[3:0] d1;
     logic[3:0] d2;
-    bit carry_in;
     logic carry_out;
     logic res_is_0xF;
     AluCtrl ctrl;
