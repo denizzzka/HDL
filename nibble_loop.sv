@@ -1,7 +1,8 @@
+// Loops ALU calculations over all nibbles
 module loopOverAllNibbles
     (
         input wire clk,
-        input wire start,
+        input wire perm_to_count, // otherwise - reset
         ref wire AluCtrl ctrl,
         input wire[31:0] word1,
         input wire[31:0] word2,
@@ -16,8 +17,7 @@ module loopOverAllNibbles
     assign reverse_direction = (ctrl.cmd == RSHFT) ? 1 : 0;
     logic[CNT_SIZE-1:0] curr_nibble_idx;
     wire is_latest;
-    logic perm_to_count;
-    assign busy = perm_to_count;
+    assign busy = perm_to_count && (~is_latest);
 
     nibble_counter #(CNT_SIZE) nibble_counter(
         clk,
@@ -26,13 +26,6 @@ module loopOverAllNibbles
         is_latest,
         curr_nibble_idx
     );
-
-    always_ff @(posedge clk)
-        if(start)
-            perm_to_count <= 1;
-        else
-            if(is_latest)
-                perm_to_count <= 0;
 
     wire[3:0] d1;
     wire[3:0] d2;
@@ -59,7 +52,7 @@ module loopOverAllNibbles_test;
     localparam RSH_VAL = 32'h_0600_0000;
 
     logic clk;
-    logic start;
+    logic perm_to_count;
     AluCtrl ctrl;
     logic[31:0] word1;
     logic[31:0] word2;
@@ -75,14 +68,14 @@ module loopOverAllNibbles_test;
             input[31:0] w2
         );
 
-        //~ $monitor("clk=%b reverse=%b start=%b idx=%h ctrl=%b d1=%h d2=%h nibble_ret=%h result=%h busy=%b",
-            //~ clk, reverse_direction, start, l.curr_nibble_idx, ctrl, l.d1, l.d2, l.nibble_ret, result, busy);
+        //~ $monitor("clk=%b reverse=%b perm_to_count=%b idx=%h ctrl=%b d1=%h d2=%h nibble_ret=%h result=%h busy=%b",
+            //~ clk, l.reverse_direction, perm_to_count, l.curr_nibble_idx, ctrl, l.d1, l.d2, l.nibble_ret, result, busy);
 
         //~ $display("cycle started");
 
         assert(clk == 0);
 
-        start = 1;
+        #1
         word1 = w1;
         word2 = w2;
 
@@ -90,13 +83,20 @@ module loopOverAllNibbles_test;
         ctrl = 0;
         ctrl.cmd = cmd;
 
+        perm_to_count = 0;
+
+        #1
+        clk = 1;
+        #1
+        clk = 0;
+        ctrl.ctrl.carry_in = 0;
+        perm_to_count = 1;
+
         //~ $display("cmd assigned");
 
         #1
         clk = 1;
         #1
-        start = 0;
-        ctrl.ctrl.carry_in = 0;
         clk=0;
 
         //~ $display("init of cycle is done");
@@ -108,12 +108,17 @@ module loopOverAllNibbles_test;
 
         assert(clk == 0);
 
+        #1
+        clk = 1;
+        #1
+        clk = 0;
+
         //~ $display("while cycle is done");
     endtask
 
     initial begin
         loop_one_word(ADD, 'h_efff_ffff, 1);
-        assert(result == 'h_f000_0000); else $error("result=%b", result);
+        assert(result == 'h_f000_0000); else $error("result=%h", result);
 
         loop_one_word(ADD, 'h_ffff_0fff, 2);
         assert(result == 'h_ffff_1001);
