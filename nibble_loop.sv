@@ -27,23 +27,23 @@ module loopOverAllNibbles
         curr_nibble_idx
     );
 
-    wire[3:0] d1;
-    wire[3:0] d2;
-    wire carry_out;
-    wire[3:0] nibble_ret;
+    wire AluArgs alu_args;
+    wire AluRet alu_ret;
+    assign alu_args.ctrl = ctrl;
+    wire[3:0] nibble_ret = alu_ret.res;
+
+    alu a(.args(alu_args), .ret(alu_ret));
 
     // All MUXes can be implemented with one selector driver
-    nibble_mux mux1(word1, curr_nibble_idx, d1);
-    nibble_mux mux2(word2, curr_nibble_idx, d2);
-
-    alu a(.res(nibble_ret), .*);
+    nibble_mux mux1(word1, curr_nibble_idx, alu_args.d1);
+    nibble_mux mux2(word2, curr_nibble_idx, alu_args.d2);
 
     wire[31:0] ret_unstored;
     nibble_demux nibble_set(result, curr_nibble_idx, nibble_ret, ret_unstored);
 
     always_ff @(posedge clk) begin
         result <= ret_unstored;
-        ctrl.ctrl.carry_in <= reverse_direction ? d2[0] : carry_out;
+        ctrl.ctrl.carry_in <= reverse_direction ? alu_args.d2[0] : alu_ret.carry_out;
     end
 
 endmodule
