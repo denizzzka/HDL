@@ -1,26 +1,32 @@
-typedef enum {
+typedef enum logic[2:0] {
     INSTR_DECODE,
     ADD_IMMUTABLE,
+    //~ STOP_NIBBLE_LOOP,
     //~ INCR_PC,
     STORE_RESULT
 } ControlState;
 
+typedef struct packed
+{
+    logic need_add_immutable;
+    logic immutable_added;
+} ControlEvents;
+
 module CtrlStateFSM
     (
         input wire clk,
-        input wire need_add_immutable,
-        input wire immutable_added,
+        input ControlEvents events,
         output ControlState currState
     );
 
     always_ff @(posedge clk)
         unique case(currState)
             INSTR_DECODE:
-                if(need_add_immutable)
+                if(events.need_add_immutable)
                     currState <= ADD_IMMUTABLE;
 
             ADD_IMMUTABLE:
-                if(immutable_added)
+                if(events.immutable_added)
                     currState <= STORE_RESULT;
 
             STORE_RESULT:
@@ -38,8 +44,8 @@ module control
     logic[7:0][31:0] mem;
 
     ControlState currState;
-    logic need_add_immutable;
-    wire immutable_added = ~busy;
+    ControlEvents events;
+    assign events.immutable_added = ~busy;
     CtrlStateFSM ctrlStateFSM(.*);
 
     Instruction instr;
@@ -72,11 +78,11 @@ module control
             OP_IMM: begin
                 alu_w1 = register_file[rs1];
                 alu_w2 = immutable_value;
-                need_add_immutable = 1;
+                events.need_add_immutable = 1;
             end
 
             LOAD: begin
-                need_add_immutable = 1;
+                events.need_add_immutable = 1;
 
                 unique case(instr.ip.ri.funct3.width)
                     //TODO: add ability to loop only over 1 and 2 bytes
@@ -90,7 +96,7 @@ module control
             end
 
             default: begin // FIXME: remove this line
-                need_add_immutable = 0;
+                events.need_add_immutable = 0;
             end
         endcase
 
@@ -141,7 +147,7 @@ module control_test;
         //~ clk = 1;
         //~ assert(c.mem[5] == 123); else $error(c.mem[5]);
 
-        repeat (20) #1 clk = ~clk;
+        repeat (30) #1 clk = ~clk;
     end
 
 endmodule
