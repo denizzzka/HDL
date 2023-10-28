@@ -21,7 +21,8 @@ module CtrlStateFSM
         if(~alu_busy && alu_perm_to_count)
             alu_perm_to_count <= 0;
 
-        //~ currState <= nextState;
+        if(~alu_busy && ~alu_perm_to_count)
+            currState <= nextState;
     end
 endmodule
 
@@ -78,7 +79,7 @@ module control
                 alu_w1 = register_file[rs1];
                 alu_w2 = immutable_value;
                 need_alu = 1;
-                nextState = INCR_PC;
+                nextState = STORE_RESULT;
             end
 
             LOAD: begin
@@ -141,7 +142,7 @@ module control_test;
         //~ clk = 1;
         //~ assert(c.mem[5] == 123); else $error(c.mem[5]);
 
-        repeat (30) #1 clk = ~clk;
+        repeat (45) #1 clk = ~clk;
     end
 
 endmodule
