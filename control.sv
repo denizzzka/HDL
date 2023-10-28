@@ -36,6 +36,12 @@ module control
     logic[31:0] pc;
     logic[31:0] register_file[32]; //TODO: x0 register must be zero
     logic[7:0][31:0] mem;
+
+    ControlState currState;
+    logic need_add_immutable;
+    wire immutable_added = ~busy;
+    CtrlStateFSM ctrlStateFSM(.*);
+
     Instruction instr;
     wire OpCode opCode;
     wire DecodedAluCmd decodedAluCmd;
@@ -52,12 +58,12 @@ module control
             .*
         );
 
-    logic start;
+    wire perm_to_count = (currState == ADD_IMMUTABLE) ? 1 : 0;
     AluCtrl alu_ctrl;
     logic[31:0] alu_w1;
     logic[31:0] alu_w2;
     wire busy;
-    logic[31:0] result;
+    logic[31:0] result; // TODO: rename to alu_result
 
     loopOverAllNibbles l(.ctrl(alu_ctrl), .word1(alu_w1), .word2(alu_w2), .*);
 
@@ -66,9 +72,12 @@ module control
             OP_IMM: begin
                 alu_w1 = register_file[rs1];
                 alu_w2 = immutable_value;
+                need_add_immutable = 1;
             end
 
             LOAD: begin
+                need_add_immutable = 1;
+
                 unique case(instr.ip.ri.funct3.width)
                     //TODO: add ability to loop only over 1 and 2 bytes
                     BITS32: begin
@@ -80,15 +89,23 @@ module control
                 endcase
             end
 
-            default: begin
+            default: begin // FIXME: remove this line
+                need_add_immutable = 0;
             end
         endcase
 
     always_ff @(posedge clk) begin
         instr <= mem[pc];
         //~ pc <= pc+2;
-        register_file[rd] <= result;
+        //~ register_file[rd] <= result;
     end
+
+    always_ff @(posedge clk)
+        unique case(currState)
+            INSTR_DECODE: begin end
+            ADD_IMMUTABLE: begin end
+            STORE_RESULT: register_file[rd] <= result;
+        endcase
 
 endmodule
 
@@ -109,7 +126,7 @@ module control_test;
         foreach(rom[i])
             c.mem[i] = rom[i];
 
-        $monitor("clk=%b pc=%h inst=%h opCode=%b rs1=%h internal_imm=%h imm=%h ret=%h", clk, c.pc, c.instr, c.opCode, c.rs1, c.instr.ip.ri.imm11, c.immutable_value, c.result);
+        $monitor("clk=%b state=%h nibb=%h pc=%h inst=%h opCode=%b rs1=%h internal_imm=%h imm=%h ret=%h", clk, c.currState, c.l.curr_nibble_idx, c.pc, c.instr, c.opCode, c.rs1, c.instr.ip.ri.imm11, c.immutable_value, c.result);
         //~ $readmemh("instr.txt", c.mem);
         //~ $dumpfile("control_test.vcd");
         //~ $dumpvars(0, control_test);
@@ -123,7 +140,7 @@ module control_test;
         //~ clk = 1;
         //~ assert(c.mem[5] == 123); else $error(c.mem[5]);
 
-        repeat (10) #1 clk = ~clk;
+        repeat (20) #1 clk = ~clk;
     end
 
 endmodule
