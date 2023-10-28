@@ -1,37 +1,28 @@
 typedef enum logic[2:0] {
-    INSTR_DECODE,
-    ADD_IMMUTABLE,
-    //~ STOP_NIBBLE_LOOP,
-    //~ INCR_PC,
+    INSTR_DECODE, //TODO: rename to INSTR_LOAD
+    INCR_PC,
     STORE_RESULT
 } ControlState;
-
-typedef struct packed
-{
-    logic need_add_immutable;
-    logic immutable_added;
-} ControlEvents;
 
 module CtrlStateFSM
     (
         input wire clk,
-        input ControlEvents events,
+        input wire need_alu, // ...loop before next state
+        input wire alu_busy,
+        input ControlState nextState,
+        output alu_perm_to_count,
         output ControlState currState
     );
 
-    always_ff @(posedge clk)
-        unique case(currState)
-            INSTR_DECODE:
-                if(events.need_add_immutable)
-                    currState <= ADD_IMMUTABLE;
+    always_ff @(posedge clk) begin
+        if(need_alu)
+            alu_perm_to_count <= 1;
 
-            ADD_IMMUTABLE:
-                if(events.immutable_added)
-                    currState <= STORE_RESULT;
+        if(~alu_busy && alu_perm_to_count)
+            alu_perm_to_count <= 0;
 
-            STORE_RESULT:
-                currState <= INSTR_DECODE;
-        endcase
+        //~ currState <= nextState;
+    end
 endmodule
 
 module control
@@ -44,8 +35,10 @@ module control
     logic[7:0][31:0] mem;
 
     ControlState currState;
-    ControlEvents events;
-    assign events.immutable_added = ~busy;
+    ControlState nextState;
+    logic need_alu;
+    wire alu_busy;
+    wire alu_perm_to_count;
     CtrlStateFSM ctrlStateFSM(.*);
 
     Instruction instr;
@@ -64,25 +57,32 @@ module control
             .*
         );
 
-    wire perm_to_count = (currState == ADD_IMMUTABLE);
     AluCtrl alu_ctrl;
     logic[31:0] alu_w1;
     logic[31:0] alu_w2;
-    wire busy;
     logic[31:0] alu_result;
 
-    loopOverAllNibbles l(.ctrl(alu_ctrl), .word1(alu_w1), .word2(alu_w2), .result(alu_result), .*);
+    loopOverAllNibbles l(
+        .clk,
+        .ctrl(alu_ctrl),
+        .word1(alu_w1),
+        .word2(alu_w2),
+        .result(alu_result),
+        .perm_to_count(alu_perm_to_count),
+        .busy(alu_busy)
+    );
 
     always_comb
         unique case(opCode)
             OP_IMM: begin
                 alu_w1 = register_file[rs1];
                 alu_w2 = immutable_value;
-                events.need_add_immutable = 1;
+                need_alu = 1;
+                nextState = INCR_PC;
             end
 
             LOAD: begin
-                events.need_add_immutable = 1;
+                need_alu = 1;
 
                 unique case(instr.ip.ri.funct3.width)
                     //TODO: add ability to loop only over 1 and 2 bytes
@@ -96,21 +96,15 @@ module control
             end
 
             default: begin // FIXME: remove this line
-                events.need_add_immutable = 0;
+                need_alu = 0;
             end
         endcase
 
-    always_ff @(posedge clk) begin
-        instr <= mem[pc];
-        //~ pc <= pc+2;
-        //~ register_file[rd] <= result;
-    end
-
     always_ff @(posedge clk)
         unique case(currState)
-            INSTR_DECODE: begin end
-            ADD_IMMUTABLE: begin end
+            INSTR_DECODE: instr = mem[pc];
             STORE_RESULT: register_file[rd] <= alu_result;
+            INCR_PC: pc <= pc+2; //FIXME: use ALU
         endcase
 
 endmodule
@@ -132,8 +126,8 @@ module control_test;
         foreach(rom[i])
             c.mem[i] = rom[i];
 
-        $monitor("clk=%b state=%h nibb=%h pc=%h inst=%h opCode=%b rs1=%h internal_imm=%h imm=%h alu_ret=%h",
-            clk, c.currState, c.l.curr_nibble_idx, c.pc, c.instr, c.opCode, c.rs1, c.instr.ip.ri.imm11, c.immutable_value, c.alu_result);
+        $monitor("clk=%b state=%h nibb=%h busy=%b pc=%h inst=%h opCode=%b rs1=%h internal_imm=%h imm=%h alu_ret=%h",
+            clk, c.currState, c.l.curr_nibble_idx, c.alu_busy, c.pc, c.instr, c.opCode, c.rs1, c.instr.ip.ri.imm11, c.immutable_value, c.alu_result);
         //~ $readmemh("instr.txt", c.mem);
         //~ $dumpfile("control_test.vcd");
         //~ $dumpvars(0, control_test);
