@@ -127,8 +127,8 @@ module control_test;
         foreach(rom[i])
             c.mem[i] = rom[i];
 
-        $monitor("clk=%b state=%h nibb=%h busy=%b pc=%h inst=%h opCode=%b rs1=%h internal_imm=%h imm=%h alu_ret=%h",
-            clk, c.currState, c.l.curr_nibble_idx, c.alu_busy, c.pc, c.instr, c.opCode, c.rs1, c.instr.ip.ri.imm11, c.immutable_value, c.alu_result);
+        $monitor("clk=%b state=%h nibb=%h perm=%b busy=%b pc=%h inst=%h opCode=%b rs1=%h internal_imm=%h imm=%h alu_ret=%h",
+            clk, c.currState, c.l.curr_nibble_idx, c.alu_perm_to_count, c.alu_busy, c.pc, c.instr, c.opCode, c.rs1, c.instr.ip.ri.imm11, c.immutable_value, c.alu_result);
         //~ $readmemh("instr.txt", c.mem);
         //~ $dumpfile("control_test.vcd");
         //~ $dumpvars(0, control_test);
