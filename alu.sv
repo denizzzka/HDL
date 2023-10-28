@@ -23,6 +23,8 @@ typedef union packed
     AluCtrlInternal ctrl;
 } AluCtrl;
 
+//TODO: add ALU args struct
+
 module alu
     (
         input[3:0] d1,
