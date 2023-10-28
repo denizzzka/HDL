@@ -1,7 +1,32 @@
 typedef enum {
     INSTR_DECODE,
-    ADD_IMMUTABLE
+    ADD_IMMUTABLE,
+    //~ INCR_PC,
+    STORE_RESULT
 } ControlState;
+
+module CtrlStateFSM
+    (
+        input wire clk,
+        input wire need_add_immutable,
+        input wire immutable_added,
+        output ControlState currState
+    );
+
+    always_ff @(posedge clk)
+        unique case(currState)
+            INSTR_DECODE:
+                if(need_add_immutable)
+                    currState <= ADD_IMMUTABLE;
+
+            ADD_IMMUTABLE:
+                if(immutable_added)
+                    currState <= STORE_RESULT;
+
+            STORE_RESULT:
+                currState <= INSTR_DECODE;
+        endcase
+endmodule
 
 module control
     (
