@@ -96,8 +96,8 @@ module check_if_0xF (input [3:0] in, output ret);
 endmodule
 
 module alu_test;
-    AluArgs args;
-    AluRet ret;
+    wire AluArgs args;
+    wire AluRet ret;
 
     logic[3:0] d1;
     logic[3:0] d2;
