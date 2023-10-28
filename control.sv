@@ -63,9 +63,9 @@ module control
     logic[31:0] alu_w1;
     logic[31:0] alu_w2;
     wire busy;
-    logic[31:0] result; // TODO: rename to alu_result
+    logic[31:0] alu_result;
 
-    loopOverAllNibbles l(.ctrl(alu_ctrl), .word1(alu_w1), .word2(alu_w2), .*);
+    loopOverAllNibbles l(.ctrl(alu_ctrl), .word1(alu_w1), .word2(alu_w2), .result(alu_result), .*);
 
     always_comb
         unique case(opCode)
@@ -104,7 +104,7 @@ module control
         unique case(currState)
             INSTR_DECODE: begin end
             ADD_IMMUTABLE: begin end
-            STORE_RESULT: register_file[rd] <= result;
+            STORE_RESULT: register_file[rd] <= alu_result;
         endcase
 
 endmodule
@@ -126,7 +126,8 @@ module control_test;
         foreach(rom[i])
             c.mem[i] = rom[i];
 
-        $monitor("clk=%b state=%h nibb=%h pc=%h inst=%h opCode=%b rs1=%h internal_imm=%h imm=%h ret=%h", clk, c.currState, c.l.curr_nibble_idx, c.pc, c.instr, c.opCode, c.rs1, c.instr.ip.ri.imm11, c.immutable_value, c.result);
+        $monitor("clk=%b state=%h nibb=%h pc=%h inst=%h opCode=%b rs1=%h internal_imm=%h imm=%h alu_ret=%h",
+            clk, c.currState, c.l.curr_nibble_idx, c.pc, c.instr, c.opCode, c.rs1, c.instr.ip.ri.imm11, c.immutable_value, c.alu_result);
         //~ $readmemh("instr.txt", c.mem);
         //~ $dumpfile("control_test.vcd");
         //~ $dumpvars(0, control_test);
