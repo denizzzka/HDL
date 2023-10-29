@@ -31,7 +31,7 @@ module control
         input wire clk
     );
 
-    logic[31:0] pc; // TODO: wire it to register file
+    logic[31:0] pc;
     logic[31:0] register_file[32]; //TODO: x0 register must be zero
     logic[7:0][31:0] mem;
 
