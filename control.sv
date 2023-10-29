@@ -18,16 +18,12 @@ module CtrlStateFSM
         output wire ControlState currState
     );
 
-    always_ff @(posedge clk) begin
-        if(need_alu)
-            alu_perm_to_count <= 1;
+    assign alu_perm_to_count = need_alu;
 
-        if(~alu_busy && alu_perm_to_count)
-            alu_perm_to_count <= 0;
+    always_ff @(posedge clk)
+        if(~alu_busy)
+            currState = nextState;
 
-        if(~alu_busy && ~alu_perm_to_count)
-            currState <= nextState;
-    end
 endmodule
 
 module control
@@ -101,6 +97,8 @@ module control
 
     always_comb
         unique case(currState)
+            INSTR_FETCH: need_alu = 0;
+
             INCR_PC_CALC:
             begin
                 alu_w1 = pc;
