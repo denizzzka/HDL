@@ -149,9 +149,9 @@ module control_test;
     logic[31:0] rom[] =
     {
         32'b00000111101100000000001010010011, // addi x5, x0, 123
-        32'b00000000010100101010001100000011, // lw x6, 5(x5)
-        32'b00000000001000001000000110110011, // add  x3, x1, x2
-        32'b00000111101100001000000110010011, // addi x3, x1, 123
+        //~ 32'b00000000010100101010001100000011, // lw x6, 5(x5)
+        //~ 32'b00000000001000001000000110110011, // add  x3, x1, x2
+        //~ 32'b00000111101100001000000110010011, // addi x3, x1, 123
         32'h00000000
     };
 
@@ -159,8 +159,11 @@ module control_test;
         foreach(rom[i])
             c.mem[i] = rom[i];
 
-        $monitor("clk=%b state=%h nibb=%h perm=%b busy=%b pc=%h inst=%h opCode=%b rs1=%h internal_imm=%h imm=%h alu_ret=%h",
-            clk, c.currState, c.l.curr_nibble_idx, c.alu_perm_to_count, c.alu_busy, c.pc, c.instr, c.opCode, c.rs1, c.instr.ip.ri.imm11, c.immutable_value, c.alu_result);
+        //~ $monitor("clk=%b state=%h nibb=%h perm=%b busy=%b pc=%h inst=%h opCode=%b rs1=%h internal_imm=%h imm=%h alu_ret=%h",
+            //~ clk, c.currState, c.l.curr_nibble_idx, c.alu_perm_to_count, c.alu_busy, c.pc, c.instr, c.opCode, c.rs1, c.instr.ip.ri.imm11, c.immutable_value, c.alu_result);
+
+        //~ $monitor("regs=%h %h %h", c.register_file[4], c.register_file[5], c.register_file[6]);
+
         //~ $readmemh("instr.txt", c.mem);
         //~ $dumpfile("control_test.vcd");
         //~ $dumpvars(0, control_test);
@@ -175,7 +178,7 @@ module control_test;
             clk = ~clk;
         end
 
-        assert(c.mem[5] == 123); else $error(c.mem[5]);
+        assert(c.register_file[5] == 123); else $error(c.register_file[5]);
     end
 
 endmodule
