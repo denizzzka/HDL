@@ -1,8 +1,8 @@
 typedef enum logic[2:0] {
     INSTR_FETCH,
-    INCR_PC_CALC, // TODO: join with INSTR_FETCH
+    INCR_PC_CALC,
     INCR_PC_STORE,
-    INSTR_DECODE,
+    INSTR_DECODE, // and call ALU if need
     READ_MEMORY,
     WRITE_MEMORY,
     STORE_ALU_RESULT
