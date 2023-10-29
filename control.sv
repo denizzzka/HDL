@@ -136,7 +136,9 @@ module control
                 end
             endcase
 
-            default: begin end
+            //~ READ_MEMORY: need_alu = 0;
+
+            default: need_alu = 0;
         endcase
 endmodule
 
@@ -163,16 +165,17 @@ module control_test;
         //~ $dumpfile("control_test.vcd");
         //~ $dumpvars(0, control_test);
 
-        //~ clk = 0;
-        //~ #1
-        //~ clk = 1;
-        //~ #1
-        //~ clk = 0;
-        //~ #1
-        //~ clk = 1;
-        //~ assert(c.mem[5] == 123); else $error(c.mem[5]);
+        // Initial state
+        c.currState = STORE_ALU_RESULT;
 
-        repeat (45) #1 clk = ~clk;
+        assert(clk == 0);
+
+        repeat (45) begin
+            #1
+            clk = ~clk;
+        end
+
+        assert(c.mem[5] == 123); else $error(c.mem[5]);
     end
 
 endmodule
