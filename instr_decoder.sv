@@ -95,7 +95,7 @@ typedef struct packed {
     logic isUnsignedCompOrLeftShift;
 } DecodedAluCmd;
 
-module instr_decoder
+module instr_stencil
     (
         input Instruction instr,
         output OpCode opCode,
@@ -150,7 +150,7 @@ module instr_decoder
 
 endmodule
 
-module instr_decoder_test;
+module instr_stencil_test;
     logic[31:0] registers[32];
     Instruction instr;
     OpCode opCode;
@@ -161,7 +161,7 @@ module instr_decoder_test;
     logic signed[11:0] jumpAddr;
     logic[31:0] ret;
 
-    instr_decoder decoder(
+    instr_stencil stencil(
         .source_register_1(reg_addr1),
         .source_register_2(reg_addr2),
         .register_out_addr(reg_dst),

@@ -51,7 +51,7 @@ module control
     wire RegAddr rs2;
     wire RegAddr rd;
 
-    instr_decoder idc(
+    instr_stencil i_s(
             .source_register_1(rs1),
             .source_register_2(rs2),
             .register_out_addr(rd),
