@@ -1,7 +1,7 @@
 typedef enum logic[2:0] {
-    INSTR_DECODE, //TODO: rename to INSTR_LOAD
+    INSTR_LOAD_AND_DECODE,
     INCR_PC,
-    STORE_RESULT
+    STORE_ALU_RESULT
 } ControlState;
 
 module CtrlStateFSM
@@ -79,7 +79,7 @@ module control
                 alu_w1 = register_file[rs1];
                 alu_w2 = immutable_value;
                 need_alu = 1;
-                nextState = STORE_RESULT;
+                nextState = STORE_ALU_RESULT;
             end
 
             LOAD: begin
@@ -103,8 +103,8 @@ module control
 
     always_ff @(posedge clk)
         unique case(currState)
-            INSTR_DECODE: instr = mem[pc];
-            STORE_RESULT: register_file[rd] <= alu_result;
+            INSTR_LOAD_AND_DECODE: instr = mem[pc];
+            STORE_ALU_RESULT: register_file[rd] <= alu_result;
             INCR_PC: pc <= pc+2; //FIXME: use ALU
         endcase
 
