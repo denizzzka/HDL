@@ -74,7 +74,7 @@ typedef struct packed
 {
     InstructionPayload ip;
     OpCode opCode;
-    logic[1:0] unused_always11;
+    logic[1:0] unused_always11; // TODO: add check if not equal to 'b11
 } Instruction;
 
 class en;

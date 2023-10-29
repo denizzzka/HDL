@@ -32,7 +32,7 @@ module control
     );
 
     logic[31:0] pc;
-    logic[31:0] register_file[32]; //TODO: x0 register must be zero
+    logic[31:0] register_file[32]; //TODO: x0 is hardwired with all bits equal to 0
     logic[7:0][31:0] mem;
 
     ControlState currState;
@@ -149,10 +149,11 @@ module control_test;
     logic[31:0] rom[] =
     {
         32'b00000111101100000000001010010011, // addi x5, x0, 123
+        32'b00000000001000101000001100010011, // addi x6, x5, 2
         //~ 32'b00000000010100101010001100000011, // lw x6, 5(x5)
         //~ 32'b00000000001000001000000110110011, // add  x3, x1, x2
         //~ 32'b00000111101100001000000110010011, // addi x3, x1, 123
-        32'h00000000
+        32'b00000000000000000000000001110011 // ecall/ebreak
     };
 
     initial begin
@@ -173,12 +174,13 @@ module control_test;
 
         assert(clk == 0);
 
-        repeat (45) begin
+        while(c.opCode != SYSTEM) begin
             #1
             clk = ~clk;
         end
 
         assert(c.register_file[5] == 123); else $error(c.register_file[5]);
+        assert(c.register_file[6] == 125); else $error(c.register_file[6]);
     end
 
 endmodule
