@@ -1,6 +1,10 @@
 typedef enum logic[2:0] {
-    INSTR_LOAD_AND_DECODE,
-    INCR_PC,
+    INSTR_FETCH,
+    INCR_PC_CALC, // TODO: join with INSTR_FETCH
+    INCR_PC_STORE,
+    INSTR_DECODE,
+    READ_MEMORY,
+    WRITE_MEMORY,
     STORE_ALU_RESULT
 } ControlState;
 
@@ -9,9 +13,9 @@ module CtrlStateFSM
         input wire clk,
         input wire need_alu, // ...loop before next state
         input wire alu_busy,
-        input ControlState nextState,
-        output alu_perm_to_count,
-        output ControlState currState
+        input wire ControlState nextState,
+        output wire alu_perm_to_count,
+        output wire ControlState currState
     );
 
     always_ff @(posedge clk) begin
@@ -31,7 +35,7 @@ module control
         input wire clk
     );
 
-    logic[31:0] pc;
+    logic[31:0] pc; // TODO: wire it to register file
     logic[31:0] register_file[32]; //TODO: x0 register must be zero
     logic[7:0][31:0] mem;
 
@@ -73,41 +77,69 @@ module control
         .busy(alu_busy)
     );
 
-    always_comb
-        unique case(opCode)
-            OP_IMM: begin
-                alu_w1 = register_file[rs1];
-                alu_w2 = immutable_value;
-                need_alu = 1;
-                nextState = STORE_ALU_RESULT;
-            end
-
-            LOAD: begin
-                need_alu = 1;
-
-                unique case(instr.ip.ri.funct3.width)
-                    //TODO: add ability to loop only over 1 and 2 bytes
-                    BITS32: begin
-                        alu_w1 = mem[register_file[rs1]];
-                        alu_w2 = immutable_value;
-                    end
-
-                    default: begin end // FIXME: remove this line
-                endcase
-            end
-
-            default: begin // FIXME: remove this line
-                need_alu = 0;
-            end
+    always_latch // TODO: why latch?
+        unique case(currState)
+            INSTR_FETCH: nextState = INCR_PC_CALC;
+            INCR_PC_CALC: nextState = INCR_PC_STORE;
+            INCR_PC_STORE: nextState = INSTR_DECODE;
+            INSTR_DECODE: nextState = READ_MEMORY;
+            READ_MEMORY: nextState = STORE_ALU_RESULT; // FIXME
+            WRITE_MEMORY: nextState = STORE_ALU_RESULT; // FIXME
+            STORE_ALU_RESULT: nextState = INSTR_FETCH;
         endcase
 
     always_ff @(posedge clk)
         unique case(currState)
-            INSTR_LOAD_AND_DECODE: instr = mem[pc];
+            INSTR_FETCH: instr <= mem[pc];
+            INCR_PC_CALC: begin end
+            INCR_PC_STORE: pc <= alu_result;
+            INSTR_DECODE: begin end
+            READ_MEMORY: begin end
+            WRITE_MEMORY: begin end
             STORE_ALU_RESULT: register_file[rd] <= alu_result;
-            INCR_PC: pc <= pc+2; //FIXME: use ALU
         endcase
 
+    always_comb
+        unique case(currState)
+            INCR_PC_CALC:
+            begin
+                alu_w1 = pc;
+                alu_w2 = 1;
+                need_alu = 1;
+            end
+
+            INCR_PC_STORE: need_alu = 0;
+
+            INSTR_DECODE:
+            //TODO: move need_alu to here?
+            unique case(opCode)
+                OP_IMM: begin
+                    alu_w1 = register_file[rs1];
+                    alu_w2 = immutable_value;
+                    need_alu = 1;
+                end
+
+                LOAD: begin
+                    need_alu = 1;
+
+                    unique case(instr.ip.ri.funct3.width)
+                        //TODO: add ability to loop only over 1 and 2 bytes
+                        BITS32: begin
+                            alu_w1 = mem[register_file[rs1]];
+                            alu_w2 = immutable_value;
+                        end
+
+                        default: begin end // FIXME: remove this line
+                    endcase
+                end
+
+                default: begin // FIXME: remove this line
+                    need_alu = 0;
+                end
+            endcase
+
+            default: begin end
+        endcase
 endmodule
 
 module control_test;
