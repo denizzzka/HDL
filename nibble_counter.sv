@@ -8,12 +8,14 @@ module nibble_counter
         output logic[WIDTH-1:0] val
     );
 
-    wire[WIDTH-1:0] fin_val = reverse_direction ? 0 : 0 - 1;
+    wire[WIDTH-1:0] arg2_width = 'b111;
+
+    wire[WIDTH-1:0] fin_val = reverse_direction ? 0 : arg2_width;
     assign is_latest = (val == fin_val);
 
     always_ff @(posedge clk)
         if(~perm_to_count)
-            val <= reverse_direction ? 0 - 1 : 0;
+            val <= reverse_direction ? arg2_width : 0;
         else
             if(~is_latest)
                 val <= reverse_direction ? val-1 : val+1;
@@ -36,7 +38,7 @@ module nibble_counter_test;
         #1
         clk = 1;
         #1
-        assert(~is_latest && (val == 'b111));
+        assert(~is_latest && (val == 'b111)); else $error("is_latest=%b val=%b", is_latest, val);
 
         perm_to_count = 1;
         clk = 0;
