@@ -2,7 +2,8 @@
 module loopOverAllNibbles
     (
         input wire clk,
-        input wire perm_to_count, // otherwise - reset
+        input wire loop_perm_to_count, // otherwise - reset
+        input wire loop_over_one_nibble, // for PC increment
         ref wire AluCtrl ctrl,
         input wire[31:0] word1,
         input wire[31:0] word2,
@@ -18,7 +19,14 @@ module loopOverAllNibbles
     wire[CNT_SIZE-1:0] alu_arg2_width = 'b111; //TODO: zero means that ALU not needed?
     logic[CNT_SIZE-1:0] curr_nibble_idx;
     wire is_latest;
+    logic perm_to_count;
     assign busy = perm_to_count && (~is_latest);
+
+    always_comb
+        if(loop_over_one_nibble && curr_nibble_idx != 0 && result_carry == 0)
+            perm_to_count = 0;
+        else
+            perm_to_count = loop_perm_to_count;
 
     nibble_counter #(CNT_SIZE) nibble_counter(
         clk,
@@ -43,9 +51,11 @@ module loopOverAllNibbles
     wire[31:0] ret_unstored;
     nibble_demux nibble_set(result, curr_nibble_idx, nibble_ret, ret_unstored);
 
+    wire result_carry = reverse_direction ? alu_args.d2[0] : alu_ret.carry_out;
+
     always_ff @(posedge clk) begin
         result <= ret_unstored;
-        ctrl.ctrl.carry_in <= reverse_direction ? alu_args.d2[0] : alu_ret.carry_out;
+        ctrl.ctrl.carry_in <= result_carry;
     end
 
 endmodule
@@ -54,7 +64,8 @@ module loopOverAllNibbles_test;
     localparam RSH_VAL = 32'h_0600_0000;
 
     logic clk;
-    logic perm_to_count;
+    logic loop_perm_to_count;
+    logic loop_over_one_nibble;
     AluCtrl ctrl;
     logic[31:0] word1;
     logic[31:0] word2;
@@ -85,14 +96,14 @@ module loopOverAllNibbles_test;
         ctrl = 0;
         ctrl.cmd = cmd;
 
-        perm_to_count = 0;
+        loop_perm_to_count = 0;
 
         #1
         clk = 1;
         #1
         clk = 0;
         ctrl.ctrl.carry_in = 0;
-        perm_to_count = 1;
+        loop_perm_to_count = 1;
 
         //~ $display("cmd assigned");
 

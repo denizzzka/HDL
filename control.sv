@@ -59,18 +59,20 @@ module control
         );
 
     AluCtrl alu_ctrl;
+    wire loop_over_one_nibble = 0;
     logic[31:0] alu_w1;
     logic[31:0] alu_w2;
     logic[31:0] alu_result;
 
     loopOverAllNibbles l(
         .clk,
+        .loop_perm_to_count(alu_perm_to_count),
         .ctrl(alu_ctrl),
         .word1(alu_w1),
         .word2(alu_w2),
         .result(alu_result),
-        .perm_to_count(alu_perm_to_count),
-        .busy(alu_busy)
+        .busy(alu_busy),
+        .*
     );
 
     always_latch // TODO: why latch?
