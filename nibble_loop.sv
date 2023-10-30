@@ -8,7 +8,7 @@ module loopOverAllNibbles
         input wire[31:0] word1,
         input wire[31:0] word2,
         output wire busy,
-        output logic[31:0] result
+        output wire[7:0][3:0] result
     );
 
     localparam CNT_SIZE = 3;
@@ -48,13 +48,10 @@ module loopOverAllNibbles
     nibble_mux mux1(word1, curr_nibble_idx, alu_args.d1);
     nibble_mux mux2(word2, curr_nibble_idx, alu_args.d2);
 
-    wire[31:0] ret_unstored;
-    nibble_demux nibble_set(result, curr_nibble_idx, nibble_ret, ret_unstored);
-
     wire result_carry = reverse_direction ? alu_args.d2[0] : alu_ret.carry_out;
 
     always_ff @(posedge clk) begin
-        result <= ret_unstored;
+        result[curr_nibble_idx] <= nibble_ret;
         ctrl.ctrl.carry_in <= result_carry;
     end
 
@@ -163,39 +160,5 @@ module nibble_mux
             5: nibble = muxed[5].src;
             6: nibble = muxed[6].src;
             7: nibble = muxed[7].src;
-        endcase
-endmodule
-
-module nibble_demux
-    (
-        input wire[31:0] in,
-        input wire[2:0] select,
-        input wire[3:0] nibble,
-        output logic[31:0] ret
-    );
-
-    // To avoid offset calculation of each nibble in "case" block
-    for(genvar i = 0; i <= 7; i++) begin: muxed
-        wire[31:0] r;
-
-        if(i > 0)
-            assign r[i*4-1:0] = in[i*4-1:0];
-
-        assign r[i*4+3:i*4] = nibble;
-
-        if(i < 7)
-            assign r[31:i*4+4] = in[31:i*4+4];
-    end
-
-    always_comb
-        unique case(select)
-            0: ret = muxed[0].r;
-            1: ret = muxed[1].r;
-            2: ret = muxed[2].r;
-            3: ret = muxed[3].r;
-            4: ret = muxed[4].r;
-            5: ret = muxed[5].r;
-            6: ret = muxed[6].r;
-            7: ret = muxed[7].r;
         endcase
 endmodule
