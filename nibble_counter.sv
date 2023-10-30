@@ -3,12 +3,11 @@ module nibble_counter
     (
         input wire clk,
         input wire perm_to_count, // otherwise - reset
+        input wire[WIDTH-1:0] arg2_width, // defined in nibbles, TODO: replace by enum
         input wire reverse_direction,
         output wire is_latest,
         output logic[WIDTH-1:0] val
     );
-
-    wire[WIDTH-1:0] arg2_width = 'b111;
 
     wire[WIDTH-1:0] fin_val = reverse_direction ? 0 : arg2_width;
     assign is_latest = (val == fin_val);
@@ -27,6 +26,7 @@ module nibble_counter_test;
     logic perm_to_count;
     logic reverse_direction;
     logic is_latest;
+    logic[2:0] arg2_width;
     logic[2:0] val;
 
     nibble_counter#(3) c(.*);
@@ -34,11 +34,12 @@ module nibble_counter_test;
     initial begin
         //~ $monitor("clk=%b perm_to_count=%b val=%h is_latest=%b", clk, perm_to_count, val, is_latest);
 
+        arg2_width = 'b010; // 2 bytes
         reverse_direction = 1;
         #1
         clk = 1;
         #1
-        assert(~is_latest && (val == 'b111)); else $error("is_latest=%b val=%b", is_latest, val);
+        assert(~is_latest && (val == 'b010)); else $error("is_latest=%b val=%b", is_latest, val);
 
         perm_to_count = 1;
         clk = 0;
@@ -51,6 +52,7 @@ module nibble_counter_test;
         //~ $monitor("clk=%b perm_to_count=%b val=%h is_latest=%b", clk, perm_to_count, val, is_latest);
 
         clk = 0;
+        arg2_width = 'b111;
         reverse_direction = 0;
         perm_to_count = 0;
 

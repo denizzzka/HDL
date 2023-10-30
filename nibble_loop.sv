@@ -15,6 +15,7 @@ module loopOverAllNibbles
     // "reverse" means from MSB to LSB
     wire reverse_direction;
     assign reverse_direction = (ctrl.cmd == RSHFT) ? 1 : 0;
+    wire[CNT_SIZE-1:0] alu_arg2_width = 'b111; //TODO: zero means that ALU not needed?
     logic[CNT_SIZE-1:0] curr_nibble_idx;
     wire is_latest;
     assign busy = perm_to_count && (~is_latest);
@@ -22,6 +23,7 @@ module loopOverAllNibbles
     nibble_counter #(CNT_SIZE) nibble_counter(
         clk,
         perm_to_count,
+        alu_arg2_width,
         reverse_direction,
         is_latest,
         curr_nibble_idx
