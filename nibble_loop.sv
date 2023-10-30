@@ -23,8 +23,8 @@ module loopOverAllNibbles
     assign busy = perm_to_count && (~is_latest);
 
     always_comb
-        if(loop_over_one_nibble && curr_nibble_idx != 0 && result_carry == 0)
-            perm_to_count = 0;
+        if(loop_over_one_nibble && curr_nibble_idx != 0)
+            perm_to_count = result_carry;
         else
             perm_to_count = loop_perm_to_count;
 

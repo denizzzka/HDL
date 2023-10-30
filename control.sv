@@ -59,7 +59,7 @@ module control
         );
 
     AluCtrl alu_ctrl;
-    wire loop_over_one_nibble = 0;
+    wire loop_over_one_nibble = 0; // FIXME: = (currState == INCR_PC_CALC);
     logic[31:0] alu_w1;
     logic[31:0] alu_w2;
     logic[31:0] alu_result;
@@ -159,11 +159,13 @@ module control_test;
     };
 
     initial begin
-        foreach(rom[i])
-            c.mem[i] = rom[i];
+        c.pc = 'haeff; // First instruction leads carry on PC calculation
 
-        //~ $monitor("clk=%b state=%h nibb=%h perm=%b busy=%b pc=%h inst=%h opCode=%b rs1=%h internal_imm=%h imm=%h alu_ret=%h",
-            //~ clk, c.currState, c.l.curr_nibble_idx, c.alu_perm_to_count, c.alu_busy, c.pc, c.instr, c.opCode, c.rs1, c.instr.ip.ri.imm11, c.immutable_value, c.alu_result);
+        foreach(rom[i])
+            c.mem[i + c.pc] = rom[i];
+
+        $monitor("clk=%b state=%h nibb=%h perm=%b busy=%b pc=%h inst=%h opCode=%b rs1=%h internal_imm=%h imm=%h alu_ret=%h carry=%b",
+            clk, c.currState, c.l.curr_nibble_idx, c.l.perm_to_count, c.alu_busy, c.pc, c.instr, c.opCode, c.rs1, c.instr.ip.ri.imm11, c.immutable_value, c.alu_result, c.l.result_carry);
 
         //~ $monitor("regs=%h %h %h", c.register_file[4], c.register_file[5], c.register_file[6]);
 
