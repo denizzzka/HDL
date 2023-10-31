@@ -25,7 +25,7 @@ module loopOverAllNibbles
 
     always_comb
         if(loop_over_one_nibble && curr_nibble_idx != 0)
-            perm_to_count = result_carry;
+            perm_to_count = result_carry || ctrl.ctrl.carry_in;
         else
             perm_to_count = loop_perm_to_count;
 
@@ -51,11 +51,12 @@ module loopOverAllNibbles
     wire result_carry = reverse_direction ? alu_args.d2[0] : alu_ret.carry_out;
 
     always_ff @(posedge clk) begin
-        if(~perm_to_count)
+        if(~loop_perm_to_count)
             result <= preinit_result;
-
-        result[curr_nibble_idx] <= alu_ret.res;
-        ctrl.ctrl.carry_in <= result_carry;
+        else begin
+            result[curr_nibble_idx] <= alu_ret.res;
+            ctrl.ctrl.carry_in <= result_carry;
+        end
     end
 
 endmodule

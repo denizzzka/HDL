@@ -59,9 +59,10 @@ module control
         );
 
     AluCtrl alu_ctrl;
-    wire loop_over_one_nibble = 0; // FIXME: = (currState == INCR_PC_CALC);
+    wire loop_over_one_nibble = (currState == INCR_PC_CALC);
     logic[31:0] alu_w1;
     logic[31:0] alu_w2;
+    logic[31:0] alu_preinit_result;
     logic[31:0] alu_result;
 
     loopOverAllNibbles l(
@@ -70,6 +71,7 @@ module control
         .ctrl(alu_ctrl),
         .word1(alu_w1),
         .word2(alu_w2),
+        .preinit_result(alu_preinit_result),
         .result(alu_result),
         .busy(alu_busy),
         .*
@@ -99,7 +101,11 @@ module control
 
     always_comb
         unique case(currState)
-            INSTR_FETCH: need_alu = 0;
+            INSTR_FETCH:
+            begin
+                alu_preinit_result = pc;
+                need_alu = 0;
+            end
 
             INCR_PC_CALC:
             begin
@@ -140,7 +146,10 @@ module control
 
             //~ READ_MEMORY: need_alu = 0;
 
-            default: need_alu = 0;
+            default: begin
+                alu_preinit_result = 0;
+                need_alu = 0;
+            end
         endcase
 endmodule
 
@@ -164,8 +173,8 @@ module control_test;
         foreach(rom[i])
             c.mem[i + c.pc] = rom[i];
 
-        $monitor("clk=%b state=%h nibb=%h perm=%b busy=%b pc=%h inst=%h opCode=%b rs1=%h internal_imm=%h imm=%h alu_ret=%h carry=%b",
-            clk, c.currState, c.l.curr_nibble_idx, c.l.perm_to_count, c.alu_busy, c.pc, c.instr, c.opCode, c.rs1, c.instr.ip.ri.imm11, c.immutable_value, c.alu_result, c.l.result_carry);
+        //~ $monitor("clk=%b state=%h nibb=%h perm=%b busy=%b alu_ret=%h d1=%h d2=%h carry=(%b %b) pc=%h inst=%h opCode=%b rs1=%h internal_imm=%h imm=%h",
+            //~ clk, c.currState, c.l.curr_nibble_idx, c.l.perm_to_count, c.alu_busy, c.alu_result, c.l.alu_args.d1, c.l.alu_args.d2, c.l.result_carry, c.l.ctrl.ctrl.carry_in, c.pc, c.instr, c.opCode, c.rs1, c.instr.ip.ri.imm11, c.immutable_value);
 
         //~ $monitor("regs=%h %h %h", c.register_file[4], c.register_file[5], c.register_file[6]);
 
