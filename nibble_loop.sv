@@ -7,6 +7,7 @@ module loopOverAllNibbles
         ref wire AluCtrl ctrl,
         input wire[7:0][3:0] word1,
         input wire[7:0][3:0] word2,
+        input wire[31:0] preinit_result,
         output wire busy,
         output wire[7:0][3:0] result
     );
@@ -50,6 +51,9 @@ module loopOverAllNibbles
     wire result_carry = reverse_direction ? alu_args.d2[0] : alu_ret.carry_out;
 
     always_ff @(posedge clk) begin
+        if(~perm_to_count)
+            result <= preinit_result;
+
         result[curr_nibble_idx] <= alu_ret.res;
         ctrl.ctrl.carry_in <= result_carry;
     end
@@ -65,6 +69,7 @@ module loopOverAllNibbles_test;
     AluCtrl ctrl;
     logic[31:0] word1;
     logic[31:0] word2;
+    wire[31:0] preinit_result = 'h_f000_0000;
     logic[31:0] result;
     wire busy;
 
@@ -126,8 +131,8 @@ module loopOverAllNibbles_test;
     endtask
 
     initial begin
-        loop_one_word(ADD, 'h_efff_ffff, 1);
-        assert(result == 'h_f000_0000); else $error("result=%h", result);
+        loop_one_word(ADD, 'h_0eff_ffff, 1);
+        assert(result == 'h_0f00_0000); else $error("result=%h", result);
 
         loop_one_word(ADD, 'h_ffff_0fff, 2);
         assert(result == 'h_ffff_1001);
