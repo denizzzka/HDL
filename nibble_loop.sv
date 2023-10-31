@@ -40,7 +40,6 @@ module loopOverAllNibbles
     wire AluArgs alu_args;
     wire AluRet alu_ret;
     assign alu_args.ctrl = ctrl;
-    wire[3:0] nibble_ret = alu_ret.res;
 
     alu a(.args(alu_args), .ret(alu_ret));
 
@@ -51,7 +50,7 @@ module loopOverAllNibbles
     wire result_carry = reverse_direction ? alu_args.d2[0] : alu_ret.carry_out;
 
     always_ff @(posedge clk) begin
-        result[curr_nibble_idx] <= nibble_ret;
+        result[curr_nibble_idx] <= alu_ret.res;
         ctrl.ctrl.carry_in <= result_carry;
     end
 
