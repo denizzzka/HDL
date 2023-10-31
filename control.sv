@@ -33,7 +33,7 @@ module control
 
     logic[31:0] pc;
     logic[31:0] register_file[32]; //TODO: x0 is hardwired with all bits equal to 0
-    logic[31:0] mem[256]; // FIXME: must be [31:0][7:0]
+    logic[31:0] mem['h000f_ffff]; // FIXME: must be [31:0][7:0]
 
     ControlState currState;
     ControlState nextState;
@@ -189,10 +189,10 @@ module control_test;
         c.mem[128] = 88; // for lw command check
         assert(c.mem[128] == 88); else $error(c.mem[128]);
 
-        $monitor("clk=%b state=%h nibb=%h perm=%b busy=%b alu_ret=%h d1=%h d2=%h carry=(%b %b) pc=%h inst=%h opCode=%b rs1=%h rd=%h internal_imm=%h imm=%h",
-            clk, c.currState, c.l.curr_nibble_idx, c.l.perm_to_count, c.alu_busy, c.alu_result, c.l.alu_args.d1, c.l.alu_args.d2, c.l.result_carry, c.l.ctrl.ctrl.carry_in, c.pc, c.instr, c.opCode, c.rs1,  c.rd, c.instr.ip.ri.imm11, c.immutable_value);
+        //~ $monitor("clk=%b state=%h nibb=%h perm=%b busy=%b alu_ret=%h d1=%h d2=%h carry=(%b %b) pc=%h inst=%h opCode=%b rs1=%h rd=%h internal_imm=%h imm=%h",
+            //~ clk, c.currState, c.l.curr_nibble_idx, c.l.perm_to_count, c.alu_busy, c.alu_result, c.l.alu_args.d1, c.l.alu_args.d2, c.l.result_carry, c.l.ctrl.ctrl.carry_in, c.pc, c.instr, c.opCode, c.rs1,  c.rd, c.instr.ip.ri.imm11, c.immutable_value);
 
-        $monitor("state=%h alu_ret=%h regs=%h %h %h %h", c.currState, c.alu_result, c.register_file[4], c.register_file[5], c.register_file[6], c.register_file[7]);
+        //~ $monitor("state=%h alu_ret=%h regs=%h %h %h %h", c.currState, c.alu_result, c.register_file[4], c.register_file[5], c.register_file[6], c.register_file[7]);
 
         //~ $readmemh("instr.txt", c.mem);
         //~ $dumpfile("control_test.vcd");
