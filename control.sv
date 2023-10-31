@@ -62,7 +62,7 @@ module control
     wire loop_over_one_nibble = 0; // FIXME: = (currState == INCR_PC_CALC);
     logic[31:0] alu_w1;
     logic[31:0] alu_w2;
-    logic[31:0] alu_result;
+    logic[7:0][3:0] alu_result;
 
     loopOverAllNibbles l(
         .clk,
@@ -88,7 +88,10 @@ module control
 
     always_ff @(posedge clk)
         unique case(currState)
-            INSTR_FETCH: instr <= mem[pc];
+            INSTR_FETCH: begin
+                instr <= mem[pc];
+                alu_result <= pc; // Preinit PC result to avoid empty loops during increment
+            end
             INCR_PC_CALC: begin end
             INCR_PC_STORE: pc <= alu_result;
             INSTR_DECODE: begin end

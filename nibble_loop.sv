@@ -8,7 +8,7 @@ module loopOverAllNibbles
         input wire[7:0][3:0] word1,
         input wire[7:0][3:0] word2,
         output wire busy,
-        output wire[7:0][3:0] result
+        ref wire[7:0][3:0] result
     );
 
     localparam CNT_SIZE = 3;
