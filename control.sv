@@ -62,7 +62,7 @@ module control
     wire loop_over_one_nibble = (currState == INCR_PC_CALC);
     logic[31:0] alu_w1;
     logic[31:0] alu_w2;
-    logic[31:0] alu_preinit_result;
+    wire[31:0] alu_preinit_result;
     logic[31:0] alu_result;
 
     loopOverAllNibbles l(
@@ -99,11 +99,12 @@ module control
             STORE_ALU_RESULT: register_file[rd] <= alu_result;
         endcase
 
+    assign alu_preinit_result = (currState == INSTR_FETCH) ? pc : 0;
+
     always_comb
         unique case(currState)
             INSTR_FETCH:
             begin
-                alu_preinit_result = pc;
                 need_alu = 0;
             end
 
@@ -147,7 +148,6 @@ module control
             //~ READ_MEMORY: need_alu = 0;
 
             default: begin
-                alu_preinit_result = 0;
                 need_alu = 0;
             end
         endcase
