@@ -33,7 +33,7 @@ module control
 
     logic[31:0] pc;
     logic[31:0] register_file[32]; //TODO: x0 is hardwired with all bits equal to 0
-    logic[7:0][31:0] mem;
+    logic[31:0] mem[256]; // FIXME: must be [31:0][7:0]
 
     ControlState currState;
     ControlState nextState;
@@ -82,10 +82,16 @@ module control
             INSTR_FETCH: nextState = INCR_PC_CALC;
             INCR_PC_CALC: nextState = INCR_PC_STORE;
             INCR_PC_STORE: nextState = INSTR_DECODE;
-            INSTR_DECODE: nextState = READ_MEMORY;
-            READ_MEMORY: nextState = STORE_ALU_RESULT; // FIXME
-            WRITE_MEMORY: nextState = STORE_ALU_RESULT; // FIXME
+            INSTR_DECODE:
+            begin
+                if(opCode == LOAD)
+                    nextState = READ_MEMORY;
+                else
+                    nextState = STORE_ALU_RESULT;
+            end
             STORE_ALU_RESULT: nextState = INSTR_FETCH;
+            READ_MEMORY: nextState = INSTR_FETCH;
+            WRITE_MEMORY: nextState = INSTR_FETCH;
         endcase
 
     always_ff @(posedge clk)
@@ -94,7 +100,10 @@ module control
             INCR_PC_CALC: begin end
             INCR_PC_STORE: pc <= alu_result;
             INSTR_DECODE: begin end
-            READ_MEMORY: begin end
+            READ_MEMORY:
+                if(opCode == LOAD)
+                    register_file[rd] <= mem[alu_result];
+
             WRITE_MEMORY: begin end
             STORE_ALU_RESULT: register_file[rd] <= alu_result;
         endcase
@@ -132,7 +141,8 @@ module control
                     unique case(instr.ip.ri.funct3.width)
                         //TODO: add ability to loop only over 1 and 2 bytes
                         BITS32: begin
-                            alu_w1 = mem[register_file[rs1]];
+                            // Calc mem address:
+                            alu_w1 = register_file[rs1];
                             alu_w2 = immutable_value;
                         end
 
@@ -145,9 +155,13 @@ module control
                 end
             endcase
 
-            //~ READ_MEMORY: need_alu = 0;
+            READ_MEMORY:
+            begin
+                need_alu = 0;
+            end
 
-            default: begin
+            default:
+            begin
                 need_alu = 0;
             end
         endcase
@@ -161,9 +175,8 @@ module control_test;
     {
         32'b00000111101100000000001010010011, // addi x5, x0, 123
         32'b00000000001000101000001100010011, // addi x6, x5, 2
-        //~ 32'b00000000010100101010001100000011, // lw x6, 5(x5)
+        32'b00000000010100101010001110000011, // lw x7, 5(x5)
         //~ 32'b00000000001000001000000110110011, // add  x3, x1, x2
-        //~ 32'b00000111101100001000000110010011, // addi x3, x1, 123
         32'b00000000000000000000000001110011 // ecall/ebreak
     };
 
@@ -173,10 +186,13 @@ module control_test;
         foreach(rom[i])
             c.mem[i + c.pc] = rom[i];
 
-        //~ $monitor("clk=%b state=%h nibb=%h perm=%b busy=%b alu_ret=%h d1=%h d2=%h carry=(%b %b) pc=%h inst=%h opCode=%b rs1=%h internal_imm=%h imm=%h",
-            //~ clk, c.currState, c.l.curr_nibble_idx, c.l.perm_to_count, c.alu_busy, c.alu_result, c.l.alu_args.d1, c.l.alu_args.d2, c.l.result_carry, c.l.ctrl.ctrl.carry_in, c.pc, c.instr, c.opCode, c.rs1, c.instr.ip.ri.imm11, c.immutable_value);
+        c.mem[128] = 88; // for lw command check
+        assert(c.mem[128] == 88); else $error(c.mem[128]);
 
-        //~ $monitor("regs=%h %h %h", c.register_file[4], c.register_file[5], c.register_file[6]);
+        $monitor("clk=%b state=%h nibb=%h perm=%b busy=%b alu_ret=%h d1=%h d2=%h carry=(%b %b) pc=%h inst=%h opCode=%b rs1=%h rd=%h internal_imm=%h imm=%h",
+            clk, c.currState, c.l.curr_nibble_idx, c.l.perm_to_count, c.alu_busy, c.alu_result, c.l.alu_args.d1, c.l.alu_args.d2, c.l.result_carry, c.l.ctrl.ctrl.carry_in, c.pc, c.instr, c.opCode, c.rs1,  c.rd, c.instr.ip.ri.imm11, c.immutable_value);
+
+        $monitor("state=%h alu_ret=%h regs=%h %h %h %h", c.currState, c.alu_result, c.register_file[4], c.register_file[5], c.register_file[6], c.register_file[7]);
 
         //~ $readmemh("instr.txt", c.mem);
         //~ $dumpfile("control_test.vcd");
@@ -194,6 +210,9 @@ module control_test;
 
         assert(c.register_file[5] == 123); else $error(c.register_file[5]);
         assert(c.register_file[6] == 125); else $error(c.register_file[6]);
+
+        // Check lw command:
+        assert(c.mem[128] == 88); else $error(c.mem[128]);
     end
 
 endmodule
