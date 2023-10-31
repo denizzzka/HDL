@@ -10,6 +10,7 @@ sv_files=(
     control.sv
 )
 
-verilator +1800-2017ext+sv --assert --cc --build --exe --main --timing --trace --top-module tests "${sv_files[@]}"
+VERILATOR_ROOT=~/Dev/verilator/ \
+~/Dev/verilator/bin/verilator +1800-2017ext+sv --assert --cc --build --exe --main --timing --trace --top-module tests "${sv_files[@]}"
 
 ./obj_dir/Vtests
