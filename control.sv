@@ -99,7 +99,7 @@ module control
             STORE_ALU_RESULT: register_file[rd] <= alu_result;
         endcase
 
-    assign alu_preinit_result = (currState == INSTR_FETCH) ? pc : 0;
+    assign alu_preinit_result = (currState == INSTR_FETCH || currState == INCR_PC_CALC) ? pc : 0;
 
     always_comb
         unique case(currState)
