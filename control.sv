@@ -33,7 +33,7 @@ module control
 
     logic[31:0] pc;
     logic[31:0] register_file[32]; //TODO: x0 is hardwired with all bits equal to 0
-    logic[31:0] mem['h000f_ffff]; // FIXME: must be [31:0][7:0]
+    logic[31:0][7:0] mem;
 
     ControlState currState;
     ControlState nextState;
@@ -94,15 +94,22 @@ module control
             WRITE_MEMORY: nextState = INSTR_FETCH;
         endcase
 
+    function [31:0] wordByAddr(input[31:0] addr);
+        wordByAddr[0 +: 8] = mem[addr + 0];
+        wordByAddr[8 +: 8] = mem[addr + 1];
+        wordByAddr[16 +: 8] = mem[addr + 2];
+        wordByAddr[24 +: 8] = mem[addr + 3];
+    endfunction
+
     always_ff @(posedge clk)
         unique case(currState)
-            INSTR_FETCH: instr <= mem[pc];
+            INSTR_FETCH: instr <= wordByAddr(pc);
             INCR_PC_CALC: begin end
             INCR_PC_STORE: pc <= alu_result;
             INSTR_DECODE: begin end
             READ_MEMORY:
                 if(opCode == LOAD)
-                    register_file[rd] <= mem[alu_result];
+                    register_file[rd] <= wordByAddr(alu_result);
 
             WRITE_MEMORY: begin end
             STORE_ALU_RESULT: register_file[rd] <= alu_result;
@@ -120,7 +127,7 @@ module control
             INCR_PC_CALC:
             begin
                 alu_w1 = pc;
-                alu_w2 = 1;
+                alu_w2 = 4; // PC increment value
                 need_alu = 1;
             end
 
@@ -181,13 +188,19 @@ module control_test;
     };
 
     initial begin
-        c.pc = 'haeff; // First instruction leads carry on PC calculation
-
-        foreach(rom[i])
-            c.mem[i + c.pc] = rom[i];
+        c.pc = 'haef; // First instruction leads carry on PC calculation
 
         c.mem[128] = 88; // for lw command check
-        assert(c.mem[128] == 88); else $error(c.mem[128]);
+
+        foreach(rom[i])
+        begin
+            int n = i*4 + c.pc;
+
+            c.mem[n + 0] = rom[i][0 +: 8];
+            c.mem[n + 1] = rom[i][8 +: 8];
+            c.mem[n + 2] = rom[i][16 +: 8];
+            c.mem[n + 3] = rom[i][24 +: 8];
+        end
 
         //~ $monitor("clk=%b state=%h nibb=%h perm=%b busy=%b alu_ret=%h d1=%h d2=%h carry=(%b %b) pc=%h inst=%h opCode=%b rs1=%h rd=%h internal_imm=%h imm=%h",
             //~ clk, c.currState, c.l.curr_nibble_idx, c.l.perm_to_count, c.alu_busy, c.alu_result, c.l.alu_args.d1, c.l.alu_args.d2, c.l.result_carry, c.l.ctrl.ctrl.carry_in, c.pc, c.instr, c.opCode, c.rs1,  c.rd, c.instr.ip.ri.imm11, c.immutable_value);
@@ -212,7 +225,7 @@ module control_test;
         assert(c.register_file[6] == 125); else $error(c.register_file[6]);
 
         // Check lw command:
-        assert(c.mem[128] == 88); else $error(c.mem[128]);
+        assert(c.register_file[7] == 88); else $error(c.register_file[7]);
     end
 
 endmodule
