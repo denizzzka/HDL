@@ -42,11 +42,16 @@ module loopOverAllNibbles
     assign alu_args.ctrl = ctrl;
     wire[3:0] nibble_ret = alu_ret.res;
 
-    alu a(.args(alu_args), .ret(alu_ret));
+    logic[3:0] nibble_arg_d1;
 
-    // All MUXes can be implemented with one selector driver
-    assign alu_args.d1 = word1[curr_nibble_idx];
+    assign alu_args.d1 = nibble_arg_d1;
     assign alu_args.d2 = word2[curr_nibble_idx];
+
+    always_latch
+        if(clk == 0)
+            nibble_arg_d1 = word1[curr_nibble_idx];
+
+    alu a(.args(alu_args), .ret(alu_ret));
 
     wire result_carry = reverse_direction ? alu_args.d2[0] : alu_ret.carry_out;
 
