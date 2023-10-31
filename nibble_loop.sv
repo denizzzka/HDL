@@ -5,8 +5,8 @@ module loopOverAllNibbles
         input wire loop_perm_to_count, // otherwise - reset
         input wire loop_over_one_nibble, // for PC increment
         ref wire AluCtrl ctrl,
-        input wire[31:0] word1,
-        input wire[31:0] word2,
+        input wire[7:0][3:0] word1,
+        input wire[7:0][3:0] word2,
         output wire busy,
         output wire[7:0][3:0] result
     );
@@ -45,8 +45,8 @@ module loopOverAllNibbles
     alu a(.args(alu_args), .ret(alu_ret));
 
     // All MUXes can be implemented with one selector driver
-    nibble_mux mux1(word1, curr_nibble_idx, alu_args.d1);
-    nibble_mux mux2(word2, curr_nibble_idx, alu_args.d2);
+    assign alu_args.d1 = word1[curr_nibble_idx];
+    assign alu_args.d2 = word2[curr_nibble_idx];
 
     wire result_carry = reverse_direction ? alu_args.d2[0] : alu_ret.carry_out;
 
@@ -136,29 +136,4 @@ module loopOverAllNibbles_test;
         loop_one_word(RSHFT, 'h_xxxx_xxxx, RSH_VAL);
         assert(result == RSH_VAL >> 1); else $error("word2=%b result=%b must be=%b", word2, result, RSH_VAL >> 1);
     end
-endmodule
-
-module nibble_mux
-    (
-        input wire[31:0] word,
-        input wire[2:0] select,
-        output logic[3:0] nibble
-    );
-
-    // To avoid offset calculation of each nibble in "case" block
-    for(genvar i = 0; i <= 7; i++) begin: muxed
-        wire[3:0] src = word[i*4+3:i*4];
-    end
-
-    always_comb
-        unique case(select)
-            0: nibble = muxed[0].src;
-            1: nibble = muxed[1].src;
-            2: nibble = muxed[2].src;
-            3: nibble = muxed[3].src;
-            4: nibble = muxed[4].src;
-            5: nibble = muxed[5].src;
-            6: nibble = muxed[6].src;
-            7: nibble = muxed[7].src;
-        endcase
 endmodule
