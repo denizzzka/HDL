@@ -3,7 +3,10 @@ module loopOverAllNibbles
     (
         input wire clk,
         input wire loop_perm_to_count, // otherwise - reset
-        input wire loop_over_one_nibble, // for PC increment
+        // TODO: switch to enum to help synth better hardware:
+        // Index starts from zero, but 0 (one nibble) is special case
+        // for PC increment: don't stop loop if carry
+        input wire[2:0] loop_nibbles_number,
         ref wire AluCtrl ctrl,
         input wire[7:0][3:0] word1,
         input wire[7:0][3:0] word2,
@@ -17,7 +20,11 @@ module loopOverAllNibbles
     // "reverse" means from MSB to LSB
     wire reverse_direction;
     assign reverse_direction = (ctrl.cmd == RSHFT) ? 1 : 0;
-    wire[CNT_SIZE-1:0] alu_arg2_width = 'b111; //TODO: zero means that ALU not needed?
+
+    // 1 means "don't stop loop if carry" - special case for PC increment
+    wire loop_over_one_nibble = (loop_nibbles_number == 'b000);
+    wire[CNT_SIZE-1:0] alu_arg2_width = loop_over_one_nibble ? 'b111 : loop_nibbles_number;
+
     logic[CNT_SIZE-1:0] curr_nibble_idx;
     wire is_latest;
     logic perm_to_count;
@@ -66,7 +73,7 @@ module loopOverAllNibbles_test;
 
     logic clk;
     logic loop_perm_to_count;
-    logic loop_over_one_nibble;
+    logic[2:0] loop_nibbles_number;
     AluCtrl ctrl;
     logic[31:0] word1;
     logic[31:0] word2;
@@ -84,7 +91,7 @@ module loopOverAllNibbles_test;
         );
 
         //~ $monitor("clk=%b reverse=%b perm_to_count=%b idx=%h ctrl=%b d1=%h d2=%h nibble_ret=%h result=%h busy=%b",
-            //~ clk, l.reverse_direction, perm_to_count, l.curr_nibble_idx, ctrl, l.d1, l.d2, l.nibble_ret, result, busy);
+            //~ clk, l.reverse_direction, l.perm_to_count, l.curr_nibble_idx, ctrl, l.alu_args.d1, l.alu_args.d2, l.alu_ret.res, result, busy);
 
         //~ $display("cycle started");
 
@@ -132,6 +139,8 @@ module loopOverAllNibbles_test;
     endtask
 
     initial begin
+        loop_nibbles_number = 'b111;
+
         loop_one_word(ADD, 'h_0eff_ffff, 1);
         assert(result == 'h_0f00_0000); else $error("result=%h", result);
 
@@ -140,6 +149,12 @@ module loopOverAllNibbles_test;
 
         loop_one_word(ADD, 'h_0000_0002, -3);
         assert(result == -1); else $error("result=%d", $signed(result));
+
+        loop_nibbles_number = 3;
+        loop_one_word(ADD, 'h_0000_0001, 32'(12'(-2)));
+        assert(12'(result) == 12'(-1)); else $error("result=%d", $signed(12'(result)));
+
+        loop_nibbles_number = 'b111;
 
         loop_one_word(RSHFT, 'h_xxxx_xxxx, RSH_VAL);
         assert(result == RSH_VAL >> 1); else $error("word2=%b result=%b must be=%b", word2, result, RSH_VAL >> 1);
