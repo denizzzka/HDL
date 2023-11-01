@@ -166,7 +166,6 @@ module control
             INCR_PC_STORE: aluMode = DISABLED;
 
             INSTR_DECODE:
-            //TODO: move need_alu to here?
             unique case(opCode)
                 OP_IMM: begin
                     alu_w1 = register_file[rs1];
@@ -176,12 +175,11 @@ module control
 
                 LOAD: begin
                     unique case(instr.ip.ri.funct3.width)
-                        //TODO: add ability to loop only over 1 and 2 bytes
                         BITS32: begin
                             // Calc mem address:
                             alu_w1 = register_file[rs1];
                             alu_w2 = immutable_value;
-                            aluMode = BITS_32;
+                            aluMode = BITS_12;
                         end
 
                         default: begin end // FIXME: remove this line
