@@ -17,34 +17,41 @@ module loopOverAllNibbles
     wire reverse_direction = (ctrl.cmd == RSHFT) ? 1 : 0;
     wire[3:0] reset_val = reverse_direction ? 4'(loop_nibbles_number) : 0;
 
-    logic[3:0] counter; // is additional bit for overflow control
+    logic[3:0] counter; // contains additional overflow control bit
     wire[2:0] curr_nibble_idx = counter[2:0];
 
     //TODO: move overflow bit to outside to share this flag with another module?
     wire overflow = counter[3];
 
-    always_ff @(posedge clk)
-        if(~loop_perm_to_count)
-        begin
-            counter <= reset_val;
-        end
-        else
-        begin
-            if(processed_not_all)
-                counter <= reverse_direction ? counter-1 : counter+1;
-
-            if(last_nibble)
-                counter[3] <= 1; // set overflow
-        end
-
+    // Last nibble without considering possible carry processing
     wire last_nibble =
         reverse_direction
             ? curr_nibble_idx == 0
             : curr_nibble_idx == loop_nibbles_number;
 
-    wire processed_not_all = ~last_nibble || ctrl.ctrl.carry_in;
+    // TODO: use it as overflow bit (combine with final values)
+    // Last nibble passed
+    logic was_last_nibble;
 
-    assign busy = loop_perm_to_count && ~overflow;// processed_not_all;
+    always_ff @(posedge clk)
+        if(last_nibble)
+            was_last_nibble <= 1;
+
+    always_ff @(posedge clk)
+        if(~loop_perm_to_count)
+        begin
+            counter <= reset_val;
+            was_last_nibble <= 0;
+        end
+        else
+            if(~process_done)
+                counter <= reverse_direction ? counter-1 : counter+1;
+            else
+                counter[3] <= 1; // set overflow
+
+    wire process_done = (was_last_nibble && ~result_carry) || overflow;
+
+    assign busy = loop_perm_to_count && ~overflow;
 
     wire AluArgs alu_args;
     wire AluRet alu_ret;
@@ -92,8 +99,8 @@ module loopOverAllNibbles_test;
         //~ $monitor("clk=%b perm=%b reverse=%b idx=%h ctrl=%b d1=%h d2=%h nibble_ret=%h result=%h busy=%b",
             //~ clk, l.loop_perm_to_count, l.reverse_direction, l.counter, ctrl, l.alu_args.d1, l.alu_args.d2, l.alu_ret.res, result, busy);
 
-        $monitor("clk=%b perm=%b reverse=%b idx=%h ctrl=%b result=%h proc_not_all=%b last=%b busy=%b",
-            clk, l.loop_perm_to_count, l.reverse_direction, l.curr_nibble_idx, ctrl, result, l.processed_not_all, l.last_nibble, busy);
+        //~ $monitor("clk=%b perm=%b reverse=%b idx=%h ctrl=%b result=%h proc_not_all=%b last=%b busy=%b",
+            //~ clk, l.loop_perm_to_count, l.reverse_direction, l.curr_nibble_idx, ctrl, result, ~l.process_done, l.last_nibble, busy);
 
         //~ $display("cycle started");
 
@@ -151,6 +158,11 @@ module loopOverAllNibbles_test;
         loop_nibbles_number = 3;
         loop_one_word(ADD, 'h_0000_0001, 32'(12'(-2)));
         assert(12'(result) == 12'(-1)); else $error("result=%d", $signed(12'(result)));
+
+        preinit_result = 0;
+        loop_nibbles_number = 0;
+        loop_one_word(ADD, 'h_0000_0aff, 1);
+        assert(result == 'h_0000_0b00); else $error("result=%h", result);
 
         loop_nibbles_number = 'b111;
 
