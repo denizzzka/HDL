@@ -86,6 +86,7 @@ module control
             begin
                 unique case(opCode)
                     LOAD: nextState = READ_MEMORY;
+                    STORE: nextState = WRITE_MEMORY;
                     default: nextState = STORE_ALU_RESULT; // TODO: can be avoid by iimediate non-blocking assign?
                 endcase
             end
@@ -110,7 +111,14 @@ module control
             READ_MEMORY:
                 register_file[rd] <= wordByAddr(alu_result);
 
-            WRITE_MEMORY: begin end
+            WRITE_MEMORY:
+            begin
+                c.mem[alu_result + 0] = register_file[rs2][0 +: 8];
+                c.mem[alu_result + 1] = register_file[rs2][8 +: 8];
+                c.mem[alu_result + 2] = register_file[rs2][16 +: 8];
+                c.mem[alu_result + 3] = register_file[rs2][24 +: 8];
+            end
+
             STORE_ALU_RESULT: register_file[rd] <= alu_result;
         endcase
 
@@ -156,6 +164,21 @@ module control
                     endcase
                 end
 
+                STORE: begin
+                    need_alu = 1;
+
+                    unique case(instr.ip.ri.funct3.width)
+                        //TODO: add ability to loop only over 1 and 2 bytes
+                        BITS32: begin
+                            // Calc mem address:
+                            alu_w1 = register_file[rs1];
+                            alu_w2 = immutable_value;
+                        end
+
+                        default: begin end // FIXME: remove this line
+                    endcase
+                end
+
                 default: begin // FIXME: remove this line
                     need_alu = 0;
                 end
@@ -182,6 +205,7 @@ module control_test;
         32'b00000111101100000000001010010011, // addi x5, x0, 123
         32'b00000000001000101000001100010011, // addi x6, x5, 2
         32'b00000000010100101010001110000011, // lw x7, 5(x5)
+        32'b11111110011100110010111100100011, // sw x7, -2(x6)
         //~ 32'b00000000001000001000000110110011, // add  x3, x1, x2
         32'b00000000000000000000000001110011 // ecall/ebreak
     };
@@ -201,8 +225,12 @@ module control_test;
             c.mem[n + 3] = rom[i][24 +: 8];
         end
 
-        //~ $monitor("clk=%b state=%h nibb=%h perm=%b busy=%b alu_ret=%h d1=%h d2=%h carry=(%b %b) pc=%h inst=%h opCode=%b rs1=%h rd=%h internal_imm=%h imm=%h",
-            //~ clk, c.currState, c.l.curr_nibble_idx, c.l.perm_to_count, c.alu_busy, c.alu_result, c.l.alu_args.d1, c.l.alu_args.d2, c.l.result_carry, c.l.ctrl.ctrl.carry_in, c.pc, c.instr, c.opCode, c.rs1,  c.rd, c.instr.ip.ri.imm11, c.immutable_value);
+        $monitor("clk=%b state=%h nibb=%h perm=%b busy=%b alu_ret=%h d1=%h d2=%h carry=(%b %b) pc=%h inst=%h opCode=%b rs1=%h(%h) rd=%h(%h) internal_imm=%h imm=%h",
+            clk, c.currState, c.l.curr_nibble_idx, c.l.perm_to_count,
+            c.alu_busy, c.alu_result, c.l.alu_args.d1, c.l.alu_args.d2,
+            c.l.result_carry, c.l.ctrl.ctrl.carry_in, c.pc, c.instr,
+            c.opCode, c.register_file[c.rs1], c.rs1, c.register_file[c.rd], c.rs1,
+            c.instr.ip.ri.imm11, c.immutable_value);
 
         //~ $monitor("state=%h alu_ret=%h regs=%h %h %h %h", c.currState, c.alu_result, c.register_file[4], c.register_file[5], c.register_file[6], c.register_file[7]);
 
@@ -225,6 +253,9 @@ module control_test;
 
         // Check lw command:
         assert(c.register_file[7] == 88); else $error(c.register_file[7]);
+
+        // Check sw command:
+        assert(c.mem[123] == 88); else $error(c.mem[123]);
     end
 
 endmodule
