@@ -84,10 +84,10 @@ module control
             INCR_PC_STORE: nextState = INSTR_DECODE;
             INSTR_DECODE:
             begin
-                if(opCode == LOAD)
-                    nextState = READ_MEMORY;
-                else
-                    nextState = STORE_ALU_RESULT;
+                unique case(opCode)
+                    LOAD: nextState = READ_MEMORY;
+                    default: nextState = STORE_ALU_RESULT; // TODO: can be avoid by iimediate non-blocking assign?
+                endcase
             end
             STORE_ALU_RESULT: nextState = INSTR_FETCH;
             READ_MEMORY: nextState = INSTR_FETCH;
@@ -108,8 +108,7 @@ module control
             INCR_PC_STORE: pc <= alu_result;
             INSTR_DECODE: begin end
             READ_MEMORY:
-                if(opCode == LOAD)
-                    register_file[rd] <= wordByAddr(alu_result);
+                register_file[rd] <= wordByAddr(alu_result);
 
             WRITE_MEMORY: begin end
             STORE_ALU_RESULT: register_file[rd] <= alu_result;
