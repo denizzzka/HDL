@@ -59,7 +59,7 @@ module control
         );
 
     AluCtrl alu_ctrl;
-    wire loop_over_one_nibble = (currState == INCR_PC_CALC);
+    logic[2:0] loop_nibbles_number; // loop_over_one_nibble = (currState == INCR_PC_CALC);
     logic[31:0] alu_w1;
     logic[31:0] alu_w2;
     wire[31:0] alu_preinit_result;
@@ -128,6 +128,7 @@ module control
                 alu_w1 = pc;
                 alu_w2 = 4; // PC increment value
                 need_alu = 1;
+                loop_nibbles_number = 0;
             end
 
             INCR_PC_STORE: need_alu = 0;
@@ -139,10 +140,12 @@ module control
                     alu_w1 = register_file[rs1];
                     alu_w2 = immutable_value;
                     need_alu = 1;
+                    loop_nibbles_number = 7;
                 end
 
                 LOAD: begin
                     need_alu = 1;
+                    loop_nibbles_number = 2; // or 3 nibbles, or 12 bits
 
                     unique case(instr.ip.ri.funct3.width)
                         //TODO: add ability to loop only over 1 and 2 bytes
