@@ -226,7 +226,7 @@ module control_test;
         32'b00000000001000101000001100010011, // addi x6, x5, 2
         32'b00000000010100101010001110000011, // lw x7, 5(x5)
         32'b11111110011100110010111100100011, // sw x7, -2(x6)
-        //~ 32'b00000000001000001000000110110011, // add  x3, x1, x2
+        32'b10000000000000000000010010010011, // addi x9, x0, 0x800 (-2048)
         32'b00000000000000000000000001110011 // ecall/ebreak
     };
 
@@ -276,6 +276,9 @@ module control_test;
 
         // Check sw command:
         assert(c.mem[123] == 88); else $error(c.mem[123]);
+
+        // addi with negative arg
+        assert(c.register_file[9] == -2048); else $error("%d %h", $signed(c.register_file[9]), c.register_file[9]);
     end
 
 endmodule
