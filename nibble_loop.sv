@@ -138,6 +138,9 @@ module loopOverAllNibbles_test;
         loop_one_word(ADD, 'h_ffff_0fff, 2);
         assert(result == 'h_ffff_1001);
 
+        loop_one_word(ADD, 'h_0000_0002, -3);
+        assert(result == -1); else $error("result=%d", $signed(result));
+
         loop_one_word(RSHFT, 'h_xxxx_xxxx, RSH_VAL);
         assert(result == RSH_VAL >> 1); else $error("word2=%b result=%b must be=%b", word2, result, RSH_VAL >> 1);
     end
