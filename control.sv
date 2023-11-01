@@ -58,8 +58,33 @@ module control
             .*
         );
 
+    typedef enum {
+        DISABLED,
+        INCREMENT,
+        BITS_8,
+        BITS_12,
+        BITS_16,
+        BITS_32
+    } AluMode;
+
+    logic[2:0] loop_nibbles_number;
+
+    always_comb
+    begin
+        need_alu = (aluMode != DISABLED);
+
+        unique case(aluMode)
+            DISABLED: begin end
+            INCREMENT: loop_nibbles_number = 0;
+            BITS_8: loop_nibbles_number = 1;
+            BITS_12: loop_nibbles_number = 2;
+            BITS_16: loop_nibbles_number = 3;
+            BITS_32: loop_nibbles_number = 7;
+        endcase
+    end
+
     AluCtrl alu_ctrl;
-    logic[2:0] loop_nibbles_number; // loop_over_one_nibble = (currState == INCR_PC_CALC);
+    AluMode aluMode;
     logic[31:0] alu_w1;
     logic[31:0] alu_w2;
     wire[31:0] alu_preinit_result;
@@ -120,18 +145,17 @@ module control
         unique case(currState)
             INSTR_FETCH:
             begin
-                need_alu = 0;
+                aluMode = DISABLED;
             end
 
             INCR_PC_CALC:
             begin
                 alu_w1 = pc;
                 alu_w2 = 4; // PC increment value
-                need_alu = 1;
-                loop_nibbles_number = 0;
+                aluMode = INCREMENT;
             end
 
-            INCR_PC_STORE: need_alu = 0;
+            INCR_PC_STORE: aluMode = DISABLED;
 
             INSTR_DECODE:
             //TODO: move need_alu to here?
@@ -139,20 +163,17 @@ module control
                 OP_IMM: begin
                     alu_w1 = register_file[rs1];
                     alu_w2 = immutable_value;
-                    need_alu = 1;
-                    loop_nibbles_number = 7;
+                    aluMode = BITS_12;
                 end
 
                 LOAD: begin
-                    need_alu = 1;
-                    loop_nibbles_number = 2; // or 3 nibbles, or 12 bits
-
                     unique case(instr.ip.ri.funct3.width)
                         //TODO: add ability to loop only over 1 and 2 bytes
                         BITS32: begin
                             // Calc mem address:
                             alu_w1 = register_file[rs1];
                             alu_w2 = immutable_value;
+                            aluMode = BITS_32;
                         end
 
                         default: begin end // FIXME: remove this line
@@ -160,18 +181,18 @@ module control
                 end
 
                 default: begin // FIXME: remove this line
-                    need_alu = 0;
+                    aluMode = DISABLED;
                 end
             endcase
 
             READ_MEMORY:
             begin
-                need_alu = 0;
+                aluMode = DISABLED;
             end
 
             default:
             begin
-                need_alu = 0;
+                aluMode = DISABLED;
             end
         endcase
 endmodule
