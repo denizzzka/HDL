@@ -103,7 +103,7 @@ module instr_stencil
         output DecodedAluCmd decodedAluCmd,
         output RegAddr source_register_1,
         output RegAddr source_register_2,
-        output wire[31:0] immutable_value, //TODO: maybe shrink to 11 bits?
+        output wire signed[11:0] immediate_value,
         output logic signed[11:0] jumpAddr, //TODO: remove?
         output RegAddr register_out_addr
     );
@@ -138,14 +138,14 @@ module instr_stencil
             begin
                 source_register_1 = instr.ip.ri.source_register_1;
                 register_out_addr = instr.ip.ri.dest_register;
-                immutable_value = 32'(instr.ip.ri.imm11);
+                immediate_value = instr.ip.ri.imm11;
             end
 
             STORE:
             begin
                 source_register_1 = instr.ip.s.source_register_1;
                 source_register_2 = instr.ip.s.source_register_2;
-                immutable_value = 32'({ instr.ip.s.imm2, instr.ip.s.imm1 });
+                immediate_value = { instr.ip.s.imm2, instr.ip.s.imm1 };
             end
 
             default: register_out_addr = 'x /* FIXME: add handling for unknown opcodes */;

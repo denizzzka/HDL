@@ -46,7 +46,7 @@ module control
     wire OpCode opCode;
     wire DecodedAluCmd decodedAluCmd;
     wire signed[11:0] jumpAddr;
-    wire[31:0] immutable_value;
+    wire signed[11:0] immediate_value;
     wire RegAddr rs1;
     wire RegAddr rs2;
     wire RegAddr rd;
@@ -169,7 +169,7 @@ module control
             unique case(opCode)
                 OP_IMM: begin
                     alu_w1 = register_file[rs1];
-                    alu_w2 = immutable_value;
+                    alu_w2 = 32'(immediate_value);
                     aluMode = BITS_12;
                 end
 
@@ -178,7 +178,7 @@ module control
                         BITS32: begin
                             // Calc mem address:
                             alu_w1 = register_file[rs1];
-                            alu_w2 = immutable_value;
+                            alu_w2 = 32'(immediate_value);
                             aluMode = BITS_12;
                         end
 
@@ -187,14 +187,12 @@ module control
                 end
 
                 STORE: begin
-                    need_alu = 1;
-
                     unique case(instr.ip.ri.funct3.width)
-                        //TODO: add ability to loop only over 1 and 2 bytes
                         BITS32: begin
                             // Calc mem address:
                             alu_w1 = register_file[rs1];
-                            alu_w2 = immutable_value;
+                            alu_w2 = 32'(immediate_value);
+                            aluMode = BITS_12;
                         end
 
                         default: begin end // FIXME: remove this line
@@ -247,12 +245,12 @@ module control_test;
             c.mem[n + 3] = rom[i][24 +: 8];
         end
 
-        $monitor("clk=%b state=%h nibb=%h perm=%b busy=%b alu_ret=%h d1=%h d2=%h carry=(%b %b) pc=%h inst=%h opCode=%b rs1=%h(%h) rd=%h(%h) internal_imm=%h imm=%h",
-            clk, c.currState, c.l.curr_nibble_idx, c.l.perm_to_count,
+        $monitor("clk=%b state=%h nibb=%h perm=%b busy=%b alu_ret=%h d1=%h d2=%h carry=(%b %b) pc=%h inst=%h opCode=%b rs1=%h(%h) rd=%h(%h) imm=(%d %h)",
+            clk, c.currState, c.l.curr_nibble_idx, c.l.loop_perm_to_count,
             c.alu_busy, c.alu_result, c.l.alu_args.d1, c.l.alu_args.d2,
             c.l.result_carry, c.l.ctrl.ctrl.carry_in, c.pc, c.instr,
             c.opCode, c.register_file[c.rs1], c.rs1, c.register_file[c.rd], c.rs1,
-            c.instr.ip.ri.imm11, c.immutable_value);
+            c.immediate_value, c.immediate_value);
 
         //~ $monitor("state=%h alu_ret=%h regs=%h %h %h %h", c.currState, c.alu_result, c.register_file[4], c.register_file[5], c.register_file[6], c.register_file[7]);
 
