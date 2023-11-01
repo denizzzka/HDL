@@ -77,7 +77,7 @@ module loopOverAllNibbles_test;
     AluCtrl ctrl;
     logic[31:0] word1;
     logic[31:0] word2;
-    wire[31:0] preinit_result = 'h_f000_0000;
+    logic[31:0] preinit_result;
     logic[31:0] result;
     wire busy;
 
@@ -139,6 +139,7 @@ module loopOverAllNibbles_test;
     endtask
 
     initial begin
+        preinit_result = 'h_f000_0000;
         loop_nibbles_number = 'b111;
 
         loop_one_word(ADD, 'h_0eff_ffff, 1);
