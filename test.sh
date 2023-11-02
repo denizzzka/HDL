@@ -3,7 +3,6 @@ set -euxo pipefail
 
 sv_files=(
     tests.sv
-    nibble_counter.sv
     alu.sv
     instr_decoder.sv
     nibble_loop.sv
