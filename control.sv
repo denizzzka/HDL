@@ -91,6 +91,16 @@ module control
     wire[31:0] alu_preinit_result;
     logic[31:0] alu_result;
 
+    function void setAluArgs
+        (
+            input[31:0] word1,
+            input[31:0] word2,
+        );
+
+        alu_w1 = word1;
+        alu_w2 = word2;
+    endfunction
+
     loopOverAllNibbles l(
         .clk,
         .loop_perm_to_count(alu_perm_to_count),
@@ -152,8 +162,10 @@ module control
 
             INCR_PC_CALC:
             begin
-                alu_w1 = pc;
-                alu_w2 = 4; // PC increment value
+                setAluArgs(
+                    pc,
+                    4 // PC increment value
+                );
                 aluMode = INCREMENT;
             end
 
@@ -162,8 +174,10 @@ module control
             INSTR_DECODE:
             unique case(opCode)
                 OP_IMM: begin
-                    alu_w1 = register_file[rs1];
-                    alu_w2 = 32'(immediate_value);
+                    setAluArgs(
+                        register_file[rs1],
+                        32'(immediate_value)
+                    );
                     aluMode = BITS_12;
                 end
 
@@ -171,8 +185,10 @@ module control
                     unique case(instr.ip.ri.funct3.width)
                         BITS32: begin
                             // Calc mem address:
-                            alu_w1 = register_file[rs1];
-                            alu_w2 = 32'(immediate_value);
+                            setAluArgs(
+                                register_file[rs1],
+                                32'(immediate_value)
+                            );
                             aluMode = BITS_12;
                         end
 
