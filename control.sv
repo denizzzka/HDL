@@ -58,6 +58,14 @@ module control
             .*
         );
 
+    logic[2:0] loop_nibbles_number;
+    AluCtrl alu_ctrl;
+    wire word2_is_signed_and_negative;
+    logic[31:0] alu_w1;
+    logic[31:0] alu_w2;
+    wire[31:0] alu_preinit_result;
+    logic[31:0] alu_result;
+
     typedef enum {
         DISABLED,
         INCREMENT,
@@ -67,10 +75,16 @@ module control
         BITS_32
     } AluMode;
 
-    logic[2:0] loop_nibbles_number;
+    function void setAluArgs
+        (
+            input AluMode aluMode,
+            input[31:0] word1,
+            input[31:0] word2
+        );
 
-    always_comb
-    begin
+        alu_w1 = word1;
+        alu_w2 = word2;
+
         need_alu = (aluMode != DISABLED);
 
         unique case(aluMode)
@@ -81,26 +95,7 @@ module control
             BITS_16: loop_nibbles_number = 3;
             BITS_32: loop_nibbles_number = 7;
         endcase
-    end
 
-    AluCtrl alu_ctrl;
-    wire word2_is_signed_and_negative;
-    AluMode aluMode;
-    logic[31:0] alu_w1;
-    logic[31:0] alu_w2;
-    wire[31:0] alu_preinit_result;
-    logic[31:0] alu_result;
-
-    function void setAluArgs
-        (
-            input AluMode mode,
-            input[31:0] word1,
-            input[31:0] word2
-        );
-
-        alu_w1 = word1;
-        alu_w2 = word2;
-        aluMode = mode;
     endfunction
 
     function void disableAlu;
