@@ -6,16 +6,16 @@ module Ram
         input wire[31:0] addr,
         input wire[7:0] bus_to_mem,
         input wire[31:0] bus_to_mem_32,
-        output logic[7:0] bus_from_mem,
-        output logic[31:0] bus_from_mem_32
+        output wire[7:0] bus_from_mem,
+        output wire[31:0] bus_from_mem_32
     );
 
     logic[31:0][7:0] mem;
 
+    assign bus_from_mem = mem[addr];
+
     always_comb
     begin
-        bus_from_mem = mem[addr];
-
         bus_from_mem_32[0 +: 8] = mem[addr + 0];
         bus_from_mem_32[8 +: 8] = mem[addr + 1];
         bus_from_mem_32[16 +: 8] = mem[addr + 2];
