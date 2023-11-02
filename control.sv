@@ -265,8 +265,8 @@ module control_test;
             c.mem[n + 3] = rom[i][24 +: 8];
         end
 
-        //~ $monitor("clk=%b state=%h nibb=%h perm=%b busy=%b alu_ret=%h d1=%h d2=%h carry=(%b %b) pc=%h inst=%h opCode=%b rs1=%h rd=%h internal_imm=%h imm=%h",
-            //~ clk, c.currState, c.l.curr_nibble_idx, c.l.loop_perm_to_count, c.alu_busy, c.alu_result, c.l.alu_args.d1, c.l.alu_args.d2, c.l.result_carry, c.l.ctrl.ctrl.carry_in, c.pc, c.instr, c.opCode, c.rs1,  c.rd, c.instr.ip.ri.imm11, c.immediate_value);
+        //~ $monitor("clk=%b opCode=%.6s state=%.16s nibb=%h perm=%b busy=%b alu_ret=%h d1=%h d2=%h carry=(%b %b) pc=%h inst=%h rs1=%h rd=%h internal_imm=%h imm=%h",
+            //~ clk, c.opCode.name, c.currState.name, c.l.curr_nibble_idx, c.l.loop_perm_to_count, c.alu_busy, c.alu_result, c.l.alu_args.d1, c.l.alu_args.d2, c.l.result_carry, c.l.ctrl.ctrl.carry_in, c.pc, c.instr,c.rs1,  c.rd, c.instr.ip.ri.imm11, c.immediate_value);
 
         //~ $monitor("state=%h alu_ret=%h regs=%h %h %h %h", c.currState, c.alu_result, c.register_file[4], c.register_file[5], c.register_file[6], c.register_file[7]);
 
