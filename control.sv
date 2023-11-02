@@ -33,7 +33,19 @@ module control
 
     logic[31:0] pc;
     logic[31:0] register_file[32]; //TODO: x0 is hardwired with all bits equal to 0
-    logic[31:0][7:0] mem;
+
+    logic write_enable;
+    wire is32bitWrite = 1;
+    logic[31:0] mem_addr;
+    wire[31:0] bus_to_mem_32;
+    wire[31:0] bus_from_mem_32;
+
+    Ram mem(
+        .addr(mem_addr),
+        .bus_to_mem(),
+        .bus_from_mem(),
+        .*
+    );
 
     ControlState currState;
     ControlState nextState;
@@ -155,21 +167,14 @@ module control
             WRITE_MEMORY: nextState = INSTR_FETCH_;
         endcase
 
-    function [31:0] wordByAddr(input[31:0] addr);
-        wordByAddr[0 +: 8] = mem[addr + 0];
-        wordByAddr[8 +: 8] = mem[addr + 1];
-        wordByAddr[16 +: 8] = mem[addr + 2];
-        wordByAddr[24 +: 8] = mem[addr + 3];
-    endfunction
-
     always_ff @(posedge clk)
         unique case(currState)
-            INSTR_FETCH_: instr <= wordByAddr(pc);
+            INSTR_FETCH_: instr <= bus_from_mem_32;
             INCR_PC_CALC: begin end
             INCR_PC_STOR: pc <= alu_result;
             INSTR_DECODE: begin end
             READ_MEMORY_:
-                register_file[rd] <= wordByAddr(alu_result);
+                register_file[rd] <= bus_from_mem_32;
 
             WRITE_MEMORY: begin end
             ALU_RET_STOR: register_file[rd] <= alu_result;
@@ -177,11 +182,17 @@ module control
 
     assign alu_preinit_result = (currState == INSTR_FETCH_ || currState == INCR_PC_CALC) ? pc : 0;
 
+    function void setMemReadAddr(input[31:0] addr);
+        write_enable = 0;
+        mem_addr = addr;
+    endfunction
+
     always_comb
         unique case(currState)
             INSTR_FETCH_:
             begin
                 disableAlu();
+                setMemReadAddr(pc);
             end
 
             INCR_PC_CALC:
@@ -228,6 +239,7 @@ module control
             READ_MEMORY_:
             begin
                 disableAlu();
+                setMemReadAddr(alu_result);
             end
 
             default:
@@ -244,8 +256,8 @@ module control_test;
     logic[31:0] rom[] =
     {
         32'b00000111101100000000001010010011, // addi x5, x0, 123
-        32'b00000000001000101000001100010011, // addi x6, x5, 2
-        32'b00000000010100101010001110000011, // lw x7, 5(x5)
+        //~ 32'b00000000001000101000001100010011, // addi x6, x5, 2
+        //~ 32'b00000000010100101010001110000011, // lw x7, 5(x5)
         //~ 32'b00000000001000001000000110110011, // add  x3, x1, x2
         32'b00000000000000000000000001110011 // ecall/ebreak
     };
@@ -253,20 +265,20 @@ module control_test;
     initial begin
         c.pc = 'haef; // First instruction leads carry on PC calculation
 
-        c.mem[128] = 88; // for lw command check
+        c.mem.mem[128] = 88; // for lw command check
 
         foreach(rom[i])
         begin
             int n = i*4 + c.pc;
 
-            c.mem[n + 0] = rom[i][0 +: 8];
-            c.mem[n + 1] = rom[i][8 +: 8];
-            c.mem[n + 2] = rom[i][16 +: 8];
-            c.mem[n + 3] = rom[i][24 +: 8];
+            c.mem.mem[n + 0] = rom[i][0 +: 8];
+            c.mem.mem[n + 1] = rom[i][8 +: 8];
+            c.mem.mem[n + 2] = rom[i][16 +: 8];
+            c.mem.mem[n + 3] = rom[i][24 +: 8];
         end
 
-        //~ $monitor("clk=%b state=%h nibb=%h perm=%b busy=%b alu_ret=%h d1=%h d2=%h carry=(%b %b) pc=%h inst=%h opCode=%b rs1=%h rd=%h internal_imm=%h imm=%h",
-            //~ clk, c.currState, c.l.curr_nibble_idx, c.l.loop_perm_to_count, c.alu_busy, c.alu_result, c.l.alu_args.d1, c.l.alu_args.d2, c.l.result_carry, c.l.ctrl.ctrl.carry_in, c.pc, c.instr, c.opCode, c.rs1,  c.rd, c.instr.ip.ri.imm11, c.immediate_value);
+        $monitor("clk=%b state=%h nibb=%h perm=%b busy=%b alu_ret=%h d1=%h d2=%h carry=(%b %b) pc=%h inst=%h opCode=%b rs1=%h rd=%h internal_imm=%h imm=%h",
+            clk, c.currState, c.l.curr_nibble_idx, c.l.loop_perm_to_count, c.alu_busy, c.alu_result, c.l.alu_args.d1, c.l.alu_args.d2, c.l.result_carry, c.l.ctrl.ctrl.carry_in, c.pc, c.instr, c.opCode, c.rs1,  c.rd, c.instr.ip.ri.imm11, c.immediate_value);
 
         //~ $monitor("state=%h alu_ret=%h regs=%h %h %h %h", c.currState, c.alu_result, c.register_file[4], c.register_file[5], c.register_file[6], c.register_file[7]);
 
