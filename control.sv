@@ -268,7 +268,7 @@ module control_test;
     {
         32'b00000111101100000000001010010011, // addi x5, x0, 123
         32'b00000000001000101000001100010011, // addi x6, x5, 2
-        //~ 32'b00000000010100101010001110000011, // lw x7, 5(x5)
+        32'b00000000010100101010001110000011, // lw x7, 5(x5)
         //~ 32'b11111110011100110010111100100011, // sw x7, -2(x6)
         32'b10000000000000000000010010010011, // addi x9, x0, 0x800 (-2048)
         32'b00000000000000000000000001110011 // ecall/ebreak
@@ -276,8 +276,6 @@ module control_test;
 
     initial begin
         c.pc = 'haef; // First instruction leads carry on PC calculation
-
-        c.mem[128] = 88; // for lw command check
 
         foreach(rom[i])
         begin
@@ -289,6 +287,8 @@ module control_test;
             c.mem[n + 3] = rom[i][24 +: 8];
         end
 
+        c.mem[128] = 88; // for lw command check
+
         //~ $monitor("clk=%b state=%h nibb=%h perm=%b busy=%b alu_ret=%h d1=%h d2=%h sig_neg=%b carry=(%b %b) pc=%h inst=%h opCode=%b rs1=%h(%h) rs2=%h(%h) rd=%h(%h) imm=(%d %h)",
             //~ clk, c.currState, c.l.curr_nibble_idx, c.l.loop_perm_to_count,
             //~ c.alu_busy, c.alu_result, c.l.alu_args.d1, c.l.alu_args.d2, c.word2_is_signed_and_negative,
@@ -299,7 +299,14 @@ module control_test;
             //~ c.register_file[c.rd], c.rd,
             //~ c.immediate_value, $signed(c.immediate_value));
 
-        //~ $monitor("state=%h alu_ret=%h regs=%h %h %h %h", c.currState, c.alu_result, c.register_file[4], c.register_file[5], c.register_file[6], c.register_file[7]);
+        $monitor("state=%s alu_ret=%h opcode=%s regs=%h %h %h %h %h %h", c.currState.name, c.alu_result, c.opCode.name,
+            c.register_file[4],
+            c.register_file[5],
+            c.register_file[6],
+            c.register_file[7],
+            c.register_file[8],
+            c.register_file[9]
+        );
 
         //~ $readmemh("instr.txt", c.mem);
         //~ $dumpfile("control_test.vcd");
@@ -319,7 +326,7 @@ module control_test;
         assert(c.register_file[6] == 125); else $error(c.register_file[6]);
 
         // Check lw command:
-        //~ assert(c.register_file[7] == 88); else $error(c.register_file[7]);
+        assert(c.register_file[7] == 88); else $error(c.register_file[7]);
 
         // Check sw command:
         //~ assert(c.mem[123] == 88); else $error(c.mem[123]);
