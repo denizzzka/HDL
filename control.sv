@@ -1,11 +1,11 @@
 typedef enum logic[2:0] {
-    INSTR_FETCH,
+    INSTR_FETCH_,
     INCR_PC_CALC,
-    INCR_PC_STORE,
+    INCR_PC_STOR,
     INSTR_DECODE, // and call ALU if need
-    READ_MEMORY,
+    READ_MEMORY_,
     WRITE_MEMORY,
-    STORE_ALU_RESULT
+    ALU_RET_STOR
 } ControlState;
 
 module CtrlStateFSM
@@ -140,19 +140,19 @@ module control
 
     always_latch // TODO: why latch?
         unique case(currState)
-            INSTR_FETCH: nextState = INCR_PC_CALC;
-            INCR_PC_CALC: nextState = INCR_PC_STORE;
-            INCR_PC_STORE: nextState = INSTR_DECODE;
+            INSTR_FETCH_: nextState = INCR_PC_CALC;
+            INCR_PC_CALC: nextState = INCR_PC_STOR;
+            INCR_PC_STOR: nextState = INSTR_DECODE;
             INSTR_DECODE:
             begin
                 unique case(opCode)
-                    LOAD: nextState = READ_MEMORY;
-                    default: nextState = STORE_ALU_RESULT; // TODO: can be avoid by iimediate non-blocking assign?
+                    LOAD: nextState = READ_MEMORY_;
+                    default: nextState = ALU_RET_STOR; // TODO: can be avoid by iimediate non-blocking assign?
                 endcase
             end
-            STORE_ALU_RESULT: nextState = INSTR_FETCH;
-            READ_MEMORY: nextState = INSTR_FETCH;
-            WRITE_MEMORY: nextState = INSTR_FETCH;
+            ALU_RET_STOR: nextState = INSTR_FETCH_;
+            READ_MEMORY_: nextState = INSTR_FETCH_;
+            WRITE_MEMORY: nextState = INSTR_FETCH_;
         endcase
 
     function [31:0] wordByAddr(input[31:0] addr);
@@ -164,22 +164,22 @@ module control
 
     always_ff @(posedge clk)
         unique case(currState)
-            INSTR_FETCH: instr <= wordByAddr(pc);
+            INSTR_FETCH_: instr <= wordByAddr(pc);
             INCR_PC_CALC: begin end
-            INCR_PC_STORE: pc <= alu_result;
+            INCR_PC_STOR: pc <= alu_result;
             INSTR_DECODE: begin end
-            READ_MEMORY:
+            READ_MEMORY_:
                 register_file[rd] <= wordByAddr(alu_result);
 
             WRITE_MEMORY: begin end
-            STORE_ALU_RESULT: register_file[rd] <= alu_result;
+            ALU_RET_STOR: register_file[rd] <= alu_result;
         endcase
 
-    assign alu_preinit_result = (currState == INSTR_FETCH || currState == INCR_PC_CALC) ? pc : 0;
+    assign alu_preinit_result = (currState == INSTR_FETCH_ || currState == INCR_PC_CALC) ? pc : 0;
 
     always_comb
         unique case(currState)
-            INSTR_FETCH:
+            INSTR_FETCH_:
             begin
                 disableAlu();
             end
@@ -193,7 +193,7 @@ module control
                 );
             end
 
-            INCR_PC_STORE: disableAlu();
+            INCR_PC_STOR: disableAlu();
 
             INSTR_DECODE:
             unique case(opCode)
@@ -225,7 +225,7 @@ module control
                 end
             endcase
 
-            READ_MEMORY:
+            READ_MEMORY_:
             begin
                 disableAlu();
             end
@@ -275,7 +275,7 @@ module control_test;
         //~ $dumpvars(0, control_test);
 
         // Initial state
-        c.currState = STORE_ALU_RESULT;
+        c.currState = ALU_RET_STOR;
 
         assert(clk == 0);
 
