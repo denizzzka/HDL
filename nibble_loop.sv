@@ -51,10 +51,13 @@ module loopOverAllNibbles
             else
                 counter[3] <= 1; // set overflow
 
-    wire process_done = overflow;
-    //~ wire process_done = (was_last_nibble && ~result_carry) || overflow;
+    wire process_done = (was_last_nibble && ~result_carry) || overflow;
 
     assign busy = loop_perm_to_count && ~overflow;
+
+    // Support small signed word2 values
+    // For example, if 0x0 arg nibble passed it inverts it to 0xF
+    wire invert_curr_nibble = word2_is_negative && was_last_nibble;
 
     wire AluArgs alu_args;
     wire AluRet alu_ret;
@@ -69,10 +72,6 @@ module loopOverAllNibbles
     alu a(.args(alu_args), .ret(alu_ret));
 
     wire result_carry = reverse_direction ? alu_args.d2[0] : alu_ret.carry_out;
-
-    // Need invert rest nibbles?
-    // For example, if 0x0 arg nibble passed it inverts it to 0xF
-    wire invert_curr_nibble = word2_is_negative && was_last_nibble;
 
     always_ff @(posedge clk) begin
         if(~loop_perm_to_count)
@@ -108,11 +107,8 @@ module loopOverAllNibbles_test;
             input[31:0] w2
         );
 
-        //~ $monitor("clk=%b perm=%b reverse=%b idx=%h ctrl=%b d1=%h d2=%h nibble_ret=%h result=%h busy=%b",
-            //~ clk, l.loop_perm_to_count, l.reverse_direction, l.counter, ctrl, l.alu_args.d1, l.alu_args.d2, l.alu_ret.res, result, busy);
-
-        $monitor("clk=%b perm=%b reverse=%b idx=%h ctrl=%b result=%h proc_not_all=%b was_last=%b busy=%b",
-            clk, l.loop_perm_to_count, l.reverse_direction, l.curr_nibble_idx, ctrl, result, ~l.process_done, l.was_last_nibble, busy);
+        //~ $monitor("clk=%b perm=%b reverse=%b idx=%h ctrl=%b d1=%h d2=%h alu_ret=%h result=%h proc_not_all=%b result_carry=%b was_last=%b busy=%b",
+            //~ clk, l.loop_perm_to_count, l.reverse_direction, l.curr_nibble_idx, l.alu_args.ctrl, l.alu_args.d1, l.alu_args.d2, l.alu_ret.res, result, ~l.process_done, l.result_carry, l.was_last_nibble, busy);
 
         //~ $display("cycle started");
 
@@ -154,9 +150,10 @@ module loopOverAllNibbles_test;
         //~ $display("while cycle is done");
     endtask
 
-    wire[7:0] neg8bit = -1;
-
     initial begin
+        //~ $dumpfile("loopOverAllNibbles_test.vcd");
+        //~ $dumpvars(0, loopOverAllNibbles_test);
+
         preinit_result = 'h_f000_0000;
         loop_nibbles_number = 'b111;
 
@@ -176,7 +173,7 @@ module loopOverAllNibbles_test;
         preinit_result = 0;
         loop_nibbles_number = 1; // 8 bits
         word2_is_negative = 1; // treat arg2 as signed negative value
-        loop_one_word(ADD, 32'h_0000_ffff, 32'(8'hff));
+        loop_one_word(ADD, 32'h_0000_ffff, 32'h_0000_00ff); // w2 is 8 bit value -1
         assert(result == 65534); else $error("result=%d (%h)", $signed(result), result);
 
         word2_is_negative = 0;
