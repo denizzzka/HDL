@@ -93,12 +93,18 @@ module control
 
     function void setAluArgs
         (
+            input AluMode mode,
             input[31:0] word1,
-            input[31:0] word2,
+            input[31:0] word2
         );
 
         alu_w1 = word1;
         alu_w2 = word2;
+        aluMode = mode;
+    endfunction
+
+    function void disableAlu;
+        setAluArgs(DISABLED, 'x, 'x);
     endfunction
 
     loopOverAllNibbles l(
@@ -157,28 +163,28 @@ module control
         unique case(currState)
             INSTR_FETCH:
             begin
-                aluMode = DISABLED;
+                disableAlu();
             end
 
             INCR_PC_CALC:
             begin
                 setAluArgs(
+                    INCREMENT,
                     pc,
                     4 // PC increment value
                 );
-                aluMode = INCREMENT;
             end
 
-            INCR_PC_STORE: aluMode = DISABLED;
+            INCR_PC_STORE: disableAlu();
 
             INSTR_DECODE:
             unique case(opCode)
                 OP_IMM: begin
                     setAluArgs(
+                        BITS_12,
                         register_file[rs1],
                         32'(immediate_value)
                     );
-                    aluMode = BITS_12;
                 end
 
                 LOAD: begin
@@ -186,10 +192,10 @@ module control
                         BITS32: begin
                             // Calc mem address:
                             setAluArgs(
+                                BITS_12,
                                 register_file[rs1],
                                 32'(immediate_value)
                             );
-                            aluMode = BITS_12;
                         end
 
                         default: begin end // FIXME: remove this line
@@ -197,18 +203,18 @@ module control
                 end
 
                 default: begin // FIXME: remove this line
-                    aluMode = DISABLED;
+                    disableAlu();
                 end
             endcase
 
             READ_MEMORY:
             begin
-                aluMode = DISABLED;
+                disableAlu();
             end
 
             default:
             begin
-                aluMode = DISABLED;
+                disableAlu();
             end
         endcase
 endmodule
