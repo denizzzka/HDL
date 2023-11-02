@@ -14,13 +14,12 @@ module Ram
 
     assign bus_from_mem = mem[addr];
 
-    always_comb
-    begin
-        bus_from_mem_32[0 +: 8] = mem[addr + 0];
-        bus_from_mem_32[8 +: 8] = mem[addr + 1];
-        bus_from_mem_32[16 +: 8] = mem[addr + 2];
-        bus_from_mem_32[24 +: 8] = mem[addr + 3];
-    end
+    assign bus_from_mem_32 = {
+            mem[addr + 3],
+            mem[addr + 2],
+            mem[addr + 1],
+            mem[addr + 0]
+        };
 
     always_ff @(posedge clk)
         if(write_enable)
