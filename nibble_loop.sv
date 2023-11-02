@@ -51,7 +51,16 @@ module loopOverAllNibbles
             else
                 counter[3] <= 1; // set overflow
 
-    wire process_done = (was_last_nibble && ~result_carry) || overflow;
+    logic process_done;
+
+    always_comb
+        if(overflow)
+            process_done = 1;
+        else
+            if(invert_curr_nibble) // loop over negative signed must run over whole word to msb
+                process_done = 0;
+            else
+                process_done = was_last_nibble && ~result_carry;
 
     assign busy = loop_perm_to_count && ~overflow;
 
@@ -175,6 +184,12 @@ module loopOverAllNibbles_test;
         word2_is_negative = 1; // treat arg2 as signed negative value
         loop_one_word(ADD, 32'h_0000_ffff, 32'h_0000_00ff); // w2 is 8 bit value -1
         assert(result == 65534); else $error("result=%d (%h)", $signed(result), result);
+
+        preinit_result = 0;
+        loop_nibbles_number = 2; // 8 bits
+        word2_is_negative = 1; // treat arg2 as signed negative value
+        loop_one_word(ADD, 32'h_0000_0000, 32'h_0000_0800); // w2 is 8 bit value -1
+        assert(result == -2048); else $error("result=%d (%h), reference: %h=-2048", $signed(result), result, -2048);
 
         word2_is_negative = 0;
         loop_nibbles_number = 0;
