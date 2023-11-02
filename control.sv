@@ -84,6 +84,7 @@ module control
     end
 
     AluCtrl alu_ctrl;
+    wire word2_is_signed_and_negative;
     AluMode aluMode;
     logic[31:0] alu_w1;
     logic[31:0] alu_w2;
@@ -94,6 +95,7 @@ module control
         .clk,
         .loop_perm_to_count(alu_perm_to_count),
         .ctrl(alu_ctrl),
+        .word2_is_negative(word2_is_signed_and_negative),
         .word1(alu_w1),
         .word2(alu_w2),
         .preinit_result(alu_preinit_result),

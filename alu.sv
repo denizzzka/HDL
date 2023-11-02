@@ -140,6 +140,13 @@ module alu_test;
                 assert((16'(d1) + 16'(d2) > 16'b1111) == carry_out); else $error("d1=%b d2=%b carry_out=%b", d1, d2, carry_out);
                 assert((res == 'b1111) == res_is_0xF);
 
+                ctrl.cmd = ADD;
+                ctrl.ctrl.b_inv = 1;
+                #1
+                assert(d1 + ~d2 == res); else $error("%h + ~%h = %h (must be %h) carry=%b", d1, d2, res, d1 + ~d2, carry_out);
+                assert((16'(d1) + 16'(4'(~d2)) > 16'b1111) == carry_out); else $error("d1=%b d2=%b carry_out=%b", d1, ~d2, carry_out);
+                assert((res == 'b1111) == res_is_0xF);
+
                 ctrl.cmd = SUB;
                 #1
                 assert(d1 - d2 == res); // else $error("%h - %h = %h carry=%b", d1, d2, res, a.carry);
@@ -211,7 +218,7 @@ endmodule
 module full_adder_test;
     bit data1, data2, carry_in, direct_in;
     AluCtrl ctrl;
-    logic ret, gen, propagate, d2_possible_inverted;
+    wire ret, gen, propagate, d2_possible_inverted;
 
     full_adder a(.*);
 
