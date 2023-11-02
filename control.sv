@@ -26,13 +26,18 @@ module CtrlStateFSM
 
 endmodule
 
-typedef enum {
-    DISABLED,
-    INCREMENT,
-    BITS_8,
-    BITS_12,
-    BITS_16,
-    BITS_32
+typedef struct packed {
+    logic[2:0] nibbles_num;
+    logic isSigned;
+} AluModeOption;
+
+typedef enum AluModeOption {
+    DISABLED =  {3'd0, 1'b1}, // magic value, means 1 nibble but signed
+    INCREMENT = {3'd0, 1'b0}, // 4 bits
+    BITS_8 =    {3'd1, 1'b0},
+    BITS_16 =   {3'd3, 1'b0},
+    BITS_32 =   {3'd7, 1'b0},
+    BITS_12_SIGNED =   {3'd2, 1'b1}
 } AluMode;
 
 module control
@@ -46,7 +51,7 @@ module control
 
     ControlState currState;
     ControlState nextState;
-    logic need_alu;
+    wire need_alu = (aluMode != DISABLED);
     wire alu_busy;
     wire alu_perm_to_count;
     CtrlStateFSM ctrlStateFSM(.*);
@@ -55,7 +60,7 @@ module control
     wire OpCode opCode;
     wire DecodedAluCmd decodedAluCmd;
     wire signed[11:0] jumpAddr;
-    wire signed[11:0] immediate_value;
+    wire[11:0] immediate_value;
     wire RegAddr rs1;
     wire RegAddr rs2;
     wire RegAddr rd;
@@ -67,24 +72,11 @@ module control
             .*
         );
 
-    logic[2:0] loop_nibbles_number;
-
-    always_comb
-    begin
-        need_alu = (aluMode != DISABLED);
-
-        unique case(aluMode)
-            DISABLED: begin end
-            INCREMENT: loop_nibbles_number = 0;
-            BITS_8: loop_nibbles_number = 1;
-            BITS_12: loop_nibbles_number = 2;
-            BITS_16: loop_nibbles_number = 3;
-            BITS_32: loop_nibbles_number = 7;
-        endcase
-    end
-
+    wire[2:0] loop_nibbles_number = aluModeOption.nibbles_num;
     AluCtrl alu_ctrl;
+    wire word2_is_signed_and_negative;
     AluMode aluMode;
+    wire AluModeOption aluModeOption = aluMode;
     logic[31:0] alu_w1;
     logic[31:0] alu_w2;
     wire[31:0] alu_preinit_result;
@@ -94,6 +86,7 @@ module control
         .clk,
         .loop_perm_to_count(alu_perm_to_count),
         .ctrl(alu_ctrl),
+        .word2_is_negative(word2_is_signed_and_negative),
         .word1(alu_w1),
         .word2(alu_w2),
         .preinit_result(alu_preinit_result),
@@ -151,7 +144,8 @@ module control
 
     wire signed[31:0] imm_word;
     wire AluMode imm_aluMode;
-    ImmediateValueFormatter ivf(.word(imm_word), .aluMode(imm_aluMode), .*);
+    wire imm_isNegative;
+    ImmediateValueFormatter ivf(.immediate_value, .word(imm_word), .aluMode(imm_aluMode), .isNegative(imm_isNegative));
 
     always_comb
         unique case(currState)
@@ -182,8 +176,9 @@ module control
                         BITS32: begin
                             // Calc mem address:
                             alu_w1 = register_file[rs1];
-                            alu_w2 = 32'(immediate_value);
-                            aluMode = BITS_12;
+                            alu_w2 = imm_word;
+                            aluMode = imm_aluMode;
+                            word2_is_signed_and_negative = imm_isNegative;
                         end
 
                         default: begin end // FIXME: remove this line
@@ -220,28 +215,18 @@ module control
         endcase
 endmodule
 
-// Formats ALU arguments using 11 bit signed immediate value
+// Formats ALU arguments for using 11 bit signed immediate value
 module ImmediateValueFormatter
     (
-        input wire signed[11:0] immediate_value,
+        input wire[11:0] immediate_value,
         output wire AluMode aluMode,
+        output wire isNegative,
         output wire signed[31:0] word
     );
 
-    wire isNegative = immediate_value[11];
-    wire[19:0] negValueStub = -1;
-
-    always_comb
-        if(!isNegative)
-        begin
-            aluMode = BITS_12;
-            word = 32'(immediate_value);
-        end
-        else
-        begin
-            aluMode = BITS_32; //FIXME: remove 32 bit here
-            word = {negValueStub, immediate_value};
-        end
+    assign isNegative = immediate_value[11];
+    assign aluMode = BITS_12_SIGNED;
+    assign word = 32'(immediate_value);
 endmodule
 
 module control_test;
