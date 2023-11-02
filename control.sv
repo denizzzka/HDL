@@ -46,7 +46,7 @@ module control
     wire OpCode opCode;
     wire DecodedAluCmd decodedAluCmd;
     wire signed[11:0] jumpAddr;
-    wire signed[11:0] immediate_value;
+    wire[11:0] immediate_value;
     wire RegAddr rs1;
     wire RegAddr rs2;
     wire RegAddr rd;
