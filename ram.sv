@@ -1,4 +1,5 @@
 module Ram
+    #(parameter wordsSize = 256 * 1024 /*1Mb*/)
     (
         input clk,
         input wire write_enable,
@@ -10,27 +11,20 @@ module Ram
         output wire[31:0] bus_from_mem_32
     );
 
-    logic[31:0][7:0] mem;
+    // Flat memory array
+    logic[wordsSize-1:0] mem;
 
-    assign bus_from_mem = mem[addr];
+    int addr8 = addr * 8;
 
-    assign bus_from_mem_32 = {
-            mem[addr + 3],
-            mem[addr + 2],
-            mem[addr + 1],
-            mem[addr + 0]
-        };
+    assign bus_from_mem = mem[addr8 +: 8];
+    assign bus_from_mem_32 = mem[addr8 +: 32];
 
     always_ff @(posedge clk)
         if(write_enable)
             if(~is32bitWrite)
-                mem[addr] <= bus_to_mem;
-            else begin
-                mem[addr + 0] <= bus_to_mem_32[0 +: 8];
-                mem[addr + 1] <= bus_to_mem_32[8 +: 8];
-                mem[addr + 2] <= bus_to_mem_32[16 +: 8];
-                mem[addr + 3] <= bus_to_mem_32[24 +: 8];
-            end
+                mem[addr8 +: 8] <= bus_to_mem;
+            else
+                mem[addr8 +: 32] <= bus_to_mem_32;
 endmodule
 
 module Ram_test;
@@ -57,19 +51,14 @@ module Ram_test;
         is32bitWrite = 0;
 
         #1 clk=1; #1 clk=0;
-        addr = 'hff;
-        bus_to_mem = 'hab;
+        addr = 'h59;
+        bus_to_mem = 'hee;
         #1 clk=1; #1 clk=0;
 
         write_enable = 0;
         #1 clk=1; #1 clk=0;
 
-        assert(bus_from_mem == 'hab); else $error("%h", bus_from_mem);
-
-        addr = 'h59;
-        #1 clk=1; #1 clk=0;
-
-        assert(bus_from_mem_32 == 'h_00aabbcc); else $error("%h", bus_from_mem_32);
-        assert(bus_from_mem == 'h_cc); else $error("%h", bus_from_mem);
+        assert(bus_from_mem == 'hee); else $error("%h", bus_from_mem);
+        assert(bus_from_mem_32 == 'h_00aabbee); else $error("%h", bus_from_mem_32);
     end
 endmodule
