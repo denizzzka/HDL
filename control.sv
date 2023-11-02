@@ -60,7 +60,7 @@ module control
 
     logic[2:0] loop_nibbles_number;
     AluCtrl alu_ctrl;
-    wire word2_is_signed_and_negative;
+    logic word2_is_signed_and_negative;
     logic[31:0] alu_w1;
     logic[31:0] alu_w2;
     wire[31:0] alu_preinit_result;
@@ -75,12 +75,20 @@ module control
         BITS_32
     } AluMode;
 
+    typedef enum logic {
+        UNSIGNED,
+        SIGNED,
+        UNDEF = 'x
+    } Signed;
+
     function void setAluArgs
         (
             input AluMode aluMode,
+            input Signed isSigned,
             input[31:0] word1,
             input[31:0] word2
         );
+        logic msb; // of word2
 
         alu_w1 = word1;
         alu_w2 = word2;
@@ -96,10 +104,25 @@ module control
             BITS_32: loop_nibbles_number = 7;
         endcase
 
+        // Immediate values always signed
+        //TODO: Check is unsupported by Verilator
+        //if(aluMode == BITS_12)
+            //assert property(isSigned);
+
+        unique case(aluMode)
+            BITS_8: msb = word2[7];
+            BITS_12: msb = word2[11];
+            BITS_16: msb = word2[15];
+            BITS_32: msb = word2[31];
+            default: msb = 'x;
+        endcase
+
+        word2_is_signed_and_negative = (isSigned == SIGNED) && msb;
+
     endfunction
 
     function void disableAlu;
-        setAluArgs(DISABLED, 'x, 'x);
+        setAluArgs(DISABLED, UNDEF, 'x, 'x);
     endfunction
 
     loopOverAllNibbles l(
@@ -164,7 +187,7 @@ module control
             INCR_PC_CALC:
             begin
                 setAluArgs(
-                    INCREMENT,
+                    INCREMENT, UNSIGNED,
                     pc,
                     4 // PC increment value
                 );
@@ -176,7 +199,7 @@ module control
             unique case(opCode)
                 OP_IMM: begin
                     setAluArgs(
-                        BITS_12,
+                        BITS_12, SIGNED,
                         register_file[rs1],
                         32'(immediate_value)
                     );
@@ -187,7 +210,7 @@ module control
                         BITS32: begin
                             // Calc mem address:
                             setAluArgs(
-                                BITS_12,
+                                BITS_12, SIGNED,
                                 register_file[rs1],
                                 32'(immediate_value)
                             );
