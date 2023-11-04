@@ -76,10 +76,12 @@ module loopOverAllNibbles
     always_ff @(posedge clk) begin
         if(~loop_perm_to_count)
             result <= preinit_result;
-        else begin
-            result[counter] <= alu_ret.res;
-            ctrl.ctrl.carry_in <= result_carry;
-        end
+        else
+            if(busy)
+            begin
+                result[counter] <= alu_ret.res;
+                ctrl.ctrl.carry_in <= result_carry;
+            end
     end
 
 endmodule
