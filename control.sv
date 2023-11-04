@@ -142,7 +142,7 @@ module control
     wire is32bitWrite; // = 1;
     logic[31:0] mem_addr_bus;
     wire[7:0] bus_to_mem;
-    wire[31:0] bus_to_mem_32;
+    logic[31:0] bus_to_mem_32;
     wire[7:0] bus_from_mem;
     wire[31:0] bus_from_mem_32;
 
@@ -174,7 +174,7 @@ module control
             INCR_PC_STORE: pc <= alu_result;
             INSTR_DECODE: begin end
             READ_MEMORY: register_file[rd] <= bus_from_mem_32;
-            WRITE_MEMORY: register_file[rd] <= bus_from_mem_32;
+            WRITE_MEMORY: bus_to_mem_32 <= register_file[rs2];
             STORE_ALU_RESULT: register_file[rd] <= alu_result;
         endcase
 
@@ -182,6 +182,11 @@ module control
 
     function void prepareMemRead(input[31:0] address);
         write_enable = 0;
+        mem_addr_bus = address;
+    endfunction
+
+    function void prepareMemWrite(input[31:0] address);
+        write_enable = 1;
         mem_addr_bus = address;
     endfunction
 
@@ -215,6 +220,7 @@ module control
                 end
 
                 LOAD: begin
+                    // FIXME: signed flag must be obtained from funct3
                     unique case(instr.ip.ri.funct3.width)
                         BITS32: begin
                             // Calc mem address:
@@ -230,7 +236,7 @@ module control
                 end
 
                 STORE: begin
-                    unique case(instr.ip.ri.funct3.width)
+                    unique case(instr.ip.s.functor.width)
                         BITS32: begin
                             // Calc mem address:
                             setAluArgs(
@@ -255,6 +261,12 @@ module control
                 prepareMemRead(alu_result);
             end
 
+            WRITE_MEMORY:
+            begin
+                disableAlu();
+                prepareMemWrite(alu_result);
+            end
+
             default:
             begin
                 disableAlu();
@@ -271,8 +283,8 @@ module control_test;
         32'b00000111101100000000001010010011, // addi x5, x0, 123
         32'b00000000001000101000001100010011, // addi x6, x5, 2
         32'b00000000010100101010001110000011, // lw x7, 5(x5)
-        //~ 32'b11111110011100110010111100100011, // sw x7, -2(x6)
-        32'b10000000000000000000010010010011, // addi x9, x0, 0x800 (-2048)
+        32'b11111110011100101010111100100011, // sw x7, -2(x5)
+        //~ 32'b10000000000000000000010010010011, // addi x9, x0, 0x800 (-2048)
         32'b00000000000000000000000001110011 // ecall/ebreak
     };
 
@@ -292,24 +304,25 @@ module control_test;
         end
 
 
-        //~ $monitor("clk=%b state=%h nibb=%h perm=%b busy=%b alu_ret=%h d1=%h d2=%h sig_neg=%b carry=(%b %b) pc=%h inst=%h opCode=%b rs1=%h(%h) rs2=%h(%h) rd=%h(%h) imm=(%d %h)",
-            //~ clk, c.currState, c.l.curr_nibble_idx, c.l.loop_perm_to_count,
-            //~ c.alu_busy, c.alu_result, c.l.alu_args.d1, c.l.alu_args.d2, c.word2_is_signed_and_negative,
-            //~ c.l.result_carry, c.l.ctrl.ctrl.carry_in, c.pc, c.instr,
-            //~ c.opCode,
-            //~ c.register_file[c.rs1], c.rs1,
-            //~ c.register_file[c.rs2], c.rs2,
-            //~ c.register_file[c.rd], c.rd,
-            //~ c.immediate_value, $signed(c.immediate_value));
-
-        $monitor("state=%s alu_ret=%h opcode=%s regs=%h %h %h %h %h %h", c.currState.name, c.alu_result, c.opCode.name,
-            c.register_file[4],
-            c.register_file[5],
-            c.register_file[6],
-            c.register_file[7],
-            c.register_file[8],
-            c.register_file[9]
+        $monitor("clk=%b opCode=%s state=%s nibb=%h perm=%b busy=%b alu_ret=%h d1=%h d2=%h sig_neg=%b carry=(%b %b) pc=%h inst=%h rs1=%h(%h) rs2=%h(%h) rd=%h(%h) imm=%h mem32=%h(a:%h)",
+            clk, c.opCode.name, c.currState.name, c.l.curr_nibble_idx, c.l.loop_perm_to_count,
+            c.alu_busy, c.alu_result, c.l.alu_args.d1, c.l.alu_args.d2, c.word2_is_signed_and_negative,
+            c.l.result_carry, c.l.ctrl.ctrl.carry_in, c.pc, c.instr,
+            c.register_file[c.rs1], c.rs1,
+            c.register_file[c.rs2], c.rs2,
+            c.register_file[c.rd], c.rd,
+            c.immediate_value,
+            c.bus_from_mem_32, c.mem_addr_bus
         );
+
+        //~ $monitor("state=%s alu_ret=%h opcode=%s regs=x4:%h x5:%h x6:%h x7:%h x8:%h x9:%h", c.currState.name, c.alu_result, c.opCode.name,
+            //~ c.register_file[4],
+            //~ c.register_file[5],
+            //~ c.register_file[6],
+            //~ c.register_file[7],
+            //~ c.register_file[8],
+            //~ c.register_file[9]
+        //~ );
 
         //~ $readmemh("instr.txt", c.mem);
         //~ $dumpfile("control_test.vcd");
@@ -332,7 +345,7 @@ module control_test;
         assert(c.register_file[7] == 'h58); else $error("%h", c.register_file[7]);
 
         // Check sw command:
-        //~ assert(c.mem[123] == 88); else $error(c.mem[123]);
+        assert(c.mem.mem['h59*8 +: 8] == 'h58);
 
         // addi with negative arg
         assert(c.register_file[9] == -2048); else $error("%d %h", $signed(c.register_file[9]), c.register_file[9]);

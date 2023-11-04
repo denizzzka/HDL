@@ -45,11 +45,11 @@ typedef struct packed
 
 typedef struct packed
 {
-    logic[6:0] imm;
+    logic[6:0] imm2;
     RegAddr source_register_2; // rs2
     RegAddr source_register_1; // rs1
-    logic[2:0] functor; // func3
-    RegAddr dest_register; // rd
+    Funct3 functor;
+    logic[4:0] imm1;
 } StoreInstr;
 
 typedef struct packed
@@ -67,6 +67,7 @@ typedef union packed
 {
     RegisterImmediateInstr ri;
     RegisterRegisterInstr rr;
+    StoreInstr s;
     BranchingInstr b;
 } InstructionPayload;
 
@@ -140,9 +141,11 @@ module instr_stencil
                 immediate_value = instr.ip.ri.imm11;
             end
 
-            OP:
+            STORE:
             begin
-                register_out_addr = instr.ip.rr.dest_register;
+                source_register_1 = instr.ip.s.source_register_1;
+                source_register_2 = instr.ip.s.source_register_2;
+                immediate_value = { instr.ip.s.imm2, instr.ip.s.imm1 };
             end
 
             default: register_out_addr = 'x /* FIXME: add handling for unknown opcodes */;
