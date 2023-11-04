@@ -236,7 +236,7 @@ module control
             READ_MEMORY:
             begin
                 disableAlu();
-                prepareMemRead(pc);
+                prepareMemRead(alu_result);
             end
 
             default:
@@ -254,7 +254,7 @@ module control_test;
     {
         32'b00000111101100000000001010010011, // addi x5, x0, 123
         32'b00000000001000101000001100010011, // addi x6, x5, 2
-        //~ 32'b00000000010100101010001110000011, // lw x7, 5(x5)
+        32'b00000000010100101010001110000011, // lw x7, 5(x5)
         //~ 32'b00000000001000001000000110110011, // add  x3, x1, x2
         32'b00000000000000000000000001110011 // ecall/ebreak
     };
@@ -265,7 +265,7 @@ module control_test;
 
         c.pc = start_address;
 
-        c.mem.mem[128*8 : 8] = 88; // for lw command check
+        c.mem.mem[128*8 +: 8] = 'h58; // for lw command check
 
         foreach(rom[i])
         begin
@@ -301,7 +301,7 @@ module control_test;
         assert(c.register_file[6] == 125); else $error(c.register_file[6]);
 
         // Check lw command:
-        //~ assert(c.register_file[7] == 88); else $error(c.register_file[7]);
+        assert(c.register_file[7] == 'h58); else $error("%h", c.register_file[7]);
     end
 
 endmodule
