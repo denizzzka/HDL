@@ -15,6 +15,7 @@ module CtrlStateFSM
         input wire alu_busy,
         input wire ControlState nextState,
         output wire alu_perm_to_count,
+        output AluCtrl alu_ctrl,
         output wire ControlState currState
     );
 
@@ -22,8 +23,12 @@ module CtrlStateFSM
     assign alu_perm_to_count = need_alu;
 
     always_ff @(posedge clk)
-        if(~alu_busy)
+        if(~alu_busy) begin
             currState <= nextState;
+
+            // TODO: move all ALU stuff into one dedicated place
+            alu_ctrl.ctrl.carry_in <= 0;
+        end
 
 endmodule
 
@@ -285,7 +290,7 @@ module control_test;
         32'b00000000001000101000001100010011, // addi x6, x5, 2
         32'b00000000010100101010001110000011, // lw x7, 5(x5)
         32'b11111110011100101010111100100011, // sw x7, -2(x5)
-        //~ 32'b10000000000000000000010010010011, // addi x9, x0, 0x800 (-2048)
+        32'b10000000000000000000010010010011, // addi x9, x0, 0x800 (-2048)
         32'b00000000000000000000000001110011 // ecall/ebreak
     };
 
@@ -349,7 +354,7 @@ module control_test;
         assert(c.mem.mem['h79*8 +: 8] == 'h58); else $error("%h", c.mem.mem['h79*8 +: 8]);
 
         // addi with negative arg
-        //~ assert(c.register_file[9] == -2048); else $error("%d %h", $signed(c.register_file[9]), c.register_file[9]);
+        assert(c.register_file[9] == -2048); else $error("%d %h", $signed(c.register_file[9]), c.register_file[9]);
     end
 
 endmodule
