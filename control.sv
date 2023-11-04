@@ -177,7 +177,7 @@ module control
             STORE_ALU_RESULT: register_file[rd] <= alu_result;
         endcase
 
-    assign alu_preinit_result = (currState == INSTR_FETCH || currState == INCR_PC_CALC) ? pc : 0;
+    assign alu_preinit_result = (currState == INSTR_FETCH) ? pc : 0;
 
     function void prepareMemRead(input[31:0] address);
         write_enable = 0;
