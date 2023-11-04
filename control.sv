@@ -163,24 +163,12 @@ module control
                 unique case(opCode)
                     LOAD: nextState = READ_MEMORY;
                     STORE: nextState = WRITE_MEMORY;
-                    default: nextState = STORE_ALU_RESULT; // TODO: can be avoid by iimediate non-blocking assign?
+                    default: nextState = STORE_ALU_RESULT;
                 endcase
             end
             STORE_ALU_RESULT: nextState = INSTR_FETCH;
             READ_MEMORY: nextState = INSTR_FETCH;
             WRITE_MEMORY: nextState = INSTR_FETCH;
-        endcase
-
-    // TODO: move to module bottom
-    always_ff @(posedge clk)
-        unique case(currState)
-            INSTR_FETCH: instr <= bus_from_mem_32;
-            INCR_PC_CALC: begin end
-            INCR_PC_STORE: pc <= alu_result;
-            INSTR_DECODE: begin end
-            READ_MEMORY: register_file[rd] <= bus_from_mem_32;
-            WRITE_MEMORY: begin end
-            STORE_ALU_RESULT: register_file[rd] <= alu_result;
         endcase
 
     assign alu_preinit_result = (currState == INSTR_FETCH) ? pc : 0;
@@ -278,6 +266,18 @@ module control
                 disableAlu();
             end
         endcase
+
+    always_ff @(posedge clk)
+        unique case(currState)
+            INSTR_FETCH: instr <= bus_from_mem_32;
+            INCR_PC_CALC: begin end
+            INCR_PC_STORE: pc <= alu_result;
+            INSTR_DECODE: begin end
+            READ_MEMORY: register_file[rd] <= bus_from_mem_32;
+            WRITE_MEMORY: begin end
+            STORE_ALU_RESULT: register_file[rd] <= alu_result;
+        endcase
+
 endmodule
 
 module control_test;
@@ -310,16 +310,16 @@ module control_test;
         end
 
 
-        $monitor("clk=%b opCode=%s state=%s nibb=%h perm=%b busy=%b alu_ret=%h d1=%h d2=%h sig_neg=%b carry=(%b %b) pc=%h inst=%h rs1=%h(%h) rs2=%h(%h) rd=%h(%h) imm=%h mem32%s=%h(a:%h)",
-            clk, c.opCode.name, c.currState.name, c.l.curr_nibble_idx, c.l.loop_perm_to_count,
-            c.alu_busy, c.alu_result, c.l.alu_args.d1, c.l.alu_args.d2, c.word2_is_signed_and_negative,
-            c.l.result_carry, c.l.ctrl.ctrl.carry_in, c.pc, c.instr,
-            c.register_file[c.rs1], c.rs1,
-            c.register_file[c.rs2], c.rs2,
-            c.register_file[c.rd], c.rd,
-            c.immediate_value,
-            c.write_enable ? "W" : "R" , c.write_enable ? c.bus_to_mem_32 : c.bus_from_mem_32, c.mem_addr_bus
-        );
+        //~ $monitor("clk=%b opCode=%s state=%s nibb=%h perm=%b busy=%b alu_ret=%h d1=%h d2=%h sig_neg=%b carry=(%b %b) pc=%h inst=%h rs1=%h(%h) rs2=%h(%h) rd=%h(%h) imm=%h mem32%s=%h(a:%h)",
+            //~ clk, c.opCode.name, c.currState.name, c.l.curr_nibble_idx, c.l.loop_perm_to_count,
+            //~ c.alu_busy, c.alu_result, c.l.alu_args.d1, c.l.alu_args.d2, c.word2_is_signed_and_negative,
+            //~ c.l.result_carry, c.l.ctrl.ctrl.carry_in, c.pc, c.instr,
+            //~ c.register_file[c.rs1], c.rs1,
+            //~ c.register_file[c.rs2], c.rs2,
+            //~ c.register_file[c.rd], c.rd,
+            //~ c.immediate_value,
+            //~ c.write_enable ? "W" : "R" , c.write_enable ? c.bus_to_mem_32 : c.bus_from_mem_32, c.mem_addr_bus
+        //~ );
 
         //~ $monitor("state=%s alu_ret=%h opcode=%s regs=x4:%h x5:%h x6:%h x7:%h x8:%h x9:%h", c.currState.name, c.alu_result, c.opCode.name,
             //~ c.register_file[4],
