@@ -18,11 +18,12 @@ module CtrlStateFSM
         output wire ControlState currState
     );
 
+    //TODO: remove
     assign alu_perm_to_count = need_alu;
 
     always_ff @(posedge clk)
         if(~alu_busy)
-            currState = nextState;
+            currState <= nextState;
 
 endmodule
 
@@ -33,7 +34,6 @@ module control
 
     logic[31:0] pc;
     logic[31:0] register_file[32]; //TODO: x0 is hardwired with all bits equal to 0
-    logic[31:0][7:0] mem;
 
     ControlState currState;
     ControlState nextState;
@@ -138,6 +138,16 @@ module control
         .*
     );
 
+    logic write_enable;
+    wire is32bitWrite; // = 1;
+    logic[31:0] mem_addr_bus;
+    wire[7:0] bus_to_mem;
+    wire[31:0] bus_to_mem_32;
+    wire[7:0] bus_from_mem;
+    wire[31:0] bus_from_mem_32;
+
+    Ram#('hffff/4) mem(.addr(mem_addr_bus), .*);
+
     always_latch // TODO: why latch?
         unique case(currState)
             INSTR_FETCH: nextState = INCR_PC_CALC;
@@ -156,40 +166,31 @@ module control
             WRITE_MEMORY: nextState = INSTR_FETCH;
         endcase
 
-    function [31:0] wordByAddr(input[31:0] addr);
-        wordByAddr[0 +: 8] = mem[addr + 0];
-        wordByAddr[8 +: 8] = mem[addr + 1];
-        wordByAddr[16 +: 8] = mem[addr + 2];
-        wordByAddr[24 +: 8] = mem[addr + 3];
-    endfunction
-
+    // TODO: move to module bottom
     always_ff @(posedge clk)
         unique case(currState)
-            INSTR_FETCH: instr <= wordByAddr(pc);
+            INSTR_FETCH: instr <= bus_from_mem_32;
             INCR_PC_CALC: begin end
             INCR_PC_STORE: pc <= alu_result;
             INSTR_DECODE: begin end
-            READ_MEMORY:
-                register_file[rd] <= wordByAddr(alu_result);
-
-            WRITE_MEMORY:
-            begin
-                c.mem[alu_result + 0] = register_file[rs2][0 +: 8];
-                c.mem[alu_result + 1] = register_file[rs2][8 +: 8];
-                c.mem[alu_result + 2] = register_file[rs2][16 +: 8];
-                c.mem[alu_result + 3] = register_file[rs2][24 +: 8];
-            end
-
+            READ_MEMORY: register_file[rd] <= bus_from_mem_32;
+            WRITE_MEMORY: register_file[rd] <= bus_from_mem_32;
             STORE_ALU_RESULT: register_file[rd] <= alu_result;
         endcase
 
-    assign alu_preinit_result = (currState == INSTR_FETCH || currState == INCR_PC_CALC) ? pc : 0;
+    assign alu_preinit_result = (currState == INSTR_FETCH) ? pc : 0;
+
+    function void prepareMemRead(input[31:0] address);
+        write_enable = 0;
+        mem_addr_bus = address;
+    endfunction
 
     always_comb
         unique case(currState)
             INSTR_FETCH:
             begin
                 disableAlu();
+                prepareMemRead(pc);
             end
 
             INCR_PC_CALC:
@@ -251,6 +252,7 @@ module control
             READ_MEMORY:
             begin
                 disableAlu();
+                prepareMemRead(alu_result);
             end
 
             default:
@@ -275,19 +277,20 @@ module control_test;
     };
 
     initial begin
-        c.pc = 'haef; // First instruction leads carry on PC calculation
+        localparam start_address = 'hff; // First instruction, leads carry on PC calculation for test purpose
+        localparam start_addres_in_bits = start_address * 8;
+
+        c.pc = start_address;
+
+        c.mem.mem[128*8 +: 8] = 'h58; // for lw command check
 
         foreach(rom[i])
         begin
-            int n = i*4 + c.pc;
+            int n = i*32 + start_addres_in_bits;
 
-            c.mem[n + 0] = rom[i][0 +: 8];
-            c.mem[n + 1] = rom[i][8 +: 8];
-            c.mem[n + 2] = rom[i][16 +: 8];
-            c.mem[n + 3] = rom[i][24 +: 8];
+            c.mem.mem[n +: 32] = rom[i];
         end
 
-        c.mem[128] = 88; // for lw command check
 
         //~ $monitor("clk=%b state=%h nibb=%h perm=%b busy=%b alu_ret=%h d1=%h d2=%h sig_neg=%b carry=(%b %b) pc=%h inst=%h opCode=%b rs1=%h(%h) rs2=%h(%h) rd=%h(%h) imm=(%d %h)",
             //~ clk, c.currState, c.l.curr_nibble_idx, c.l.loop_perm_to_count,
@@ -326,7 +329,7 @@ module control_test;
         assert(c.register_file[6] == 125); else $error(c.register_file[6]);
 
         // Check lw command:
-        assert(c.register_file[7] == 88); else $error(c.register_file[7]);
+        assert(c.register_file[7] == 'h58); else $error("%h", c.register_file[7]);
 
         // Check sw command:
         //~ assert(c.mem[123] == 88); else $error(c.mem[123]);
