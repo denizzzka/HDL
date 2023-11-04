@@ -5,7 +5,6 @@ typedef enum logic[2:0] {
     INSTR_DECODE, // and call ALU if need
     READ_MEMORY,
     WRITE_MEMORY,
-    WRITE_MEMORY2,
     STORE_ALU_RESULT
 } ControlState;
 
@@ -164,8 +163,7 @@ module control
             end
             STORE_ALU_RESULT: nextState = INSTR_FETCH;
             READ_MEMORY: nextState = INSTR_FETCH;
-            WRITE_MEMORY: nextState = WRITE_MEMORY2;
-            WRITE_MEMORY2: nextState = INSTR_FETCH;
+            WRITE_MEMORY: nextState = INSTR_FETCH;
         endcase
 
     // TODO: move to module bottom
@@ -176,8 +174,7 @@ module control
             INCR_PC_STORE: pc <= alu_result;
             INSTR_DECODE: begin end
             READ_MEMORY: register_file[rd] <= bus_from_mem_32;
-            WRITE_MEMORY: begin end // bus_to_mem_32 <= register_file[rs2];
-            WRITE_MEMORY2: begin end
+            WRITE_MEMORY: begin end
             STORE_ALU_RESULT: register_file[rd] <= alu_result;
         endcase
 
@@ -267,13 +264,8 @@ module control
 
             WRITE_MEMORY:
             begin
-                prepareMemWrite(alu_result, register_file[rs2]);
-            end
-
-            WRITE_MEMORY2:
-            begin
                 disableAlu();
-                prepareMemRead(alu_result);
+                prepareMemWrite(alu_result, register_file[rs2]);
             end
 
             default:
