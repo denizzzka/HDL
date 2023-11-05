@@ -214,7 +214,6 @@ module control
                 end
 
                 LOAD: begin
-                    // FIXME: signed flag must be obtained from funct3
                     unique case(instr.ip.ri.funct3.load.width)
                         BITS32: begin
                             // Calc mem address:
@@ -230,7 +229,8 @@ module control
                 end
 
                 STORE: begin
-                    unique case(instr.ip.s.store.width)
+                    // FIXME: signed flag must be obtained from funct3
+                    unique case(instr.ip.s.width)
                         BITS32: begin
                             // Calc mem address:
                             setAluArgs(

@@ -24,7 +24,7 @@ typedef struct packed
 {
     logic isSigned;
     LoadStoreResultWidth width;
-} FunctLoadStore;
+} FunctLoad;
 
 typedef struct packed
 {
@@ -33,7 +33,7 @@ typedef struct packed
     union packed
     {
         logic[2:0] funct3;
-        FunctLoadStore load;
+        FunctLoad load;
     } funct3;
     RegAddr dest_register; // rd
 } RegisterImmediateInstr;
@@ -52,7 +52,8 @@ typedef struct packed
     logic[6:0] imm2;
     RegAddr source_register_2; // rs2
     RegAddr source_register_1; // rs1
-    FunctLoadStore store;
+    logic unused_must_be_zero; //TODO: add error check
+    LoadStoreResultWidth width;
     logic[4:0] imm1;
 } StoreInstr;
 
