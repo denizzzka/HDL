@@ -5,7 +5,8 @@ typedef enum logic[2:0] {
     INSTR_DECODE, // and call ALU if need
     READ_MEMORY,
     WRITE_MEMORY,
-    STORE_RESULT
+    STORE_RESULT,
+    ERROR
 } ControlState;
 
 module CtrlStateFSM
@@ -152,14 +153,17 @@ module control
             INSTR_DECODE:
             begin
                 unique case(opCode)
+                    OP_IMM,
+                    LUI: nextState = INSTR_FETCH;
                     LOAD: nextState = READ_MEMORY;
                     STORE: nextState = WRITE_MEMORY;
-                    default: nextState = STORE_RESULT;
+                    default: nextState = ERROR;
                 endcase
             end
             STORE_RESULT: nextState = INSTR_FETCH;
             READ_MEMORY: nextState = INSTR_FETCH;
             WRITE_MEMORY: nextState = INSTR_FETCH;
+            ERROR: nextState = ERROR;
         endcase
 
     assign alu_preinit_result = (currState == INSTR_FETCH) ? pc : 0;
@@ -208,6 +212,10 @@ module control
                     result = alu_result;
                 end
 
+                LUI: begin
+                    result = { instr[31:12], 12'b0 };
+                end
+
                 LOAD: begin
                     unique case(decoded.width)
                         // FIXME: signed flag must be obtained from funct3
@@ -239,10 +247,6 @@ module control
                     endcase
                 end
 
-                LUI: begin
-                    result = { instr[31:12], 12'b0 };
-                end
-
                 default: begin // FIXME: remove this line
                     disableAlu();
                 end
@@ -271,10 +275,16 @@ module control
             INSTR_FETCH: instr <= bus_from_mem_32;
             INCR_PC_CALC: begin end
             INCR_PC_STORE: pc <= alu_result;
-            INSTR_DECODE: begin end
+            INSTR_DECODE:
+            begin
+                // Short cycle, like as for LUI instruction
+                if(nextState == INSTR_FETCH)
+                    register_file[instr.rd] <= result;
+            end
             READ_MEMORY: register_file[instr.rd] <= bus_from_mem_32;
             WRITE_MEMORY: begin end
             STORE_RESULT: register_file[instr.rd] <= result;
+            ERROR: begin end
         endcase
 
 endmodule
@@ -314,10 +324,10 @@ module control_test;
             //~ clk, c.opCode.name, c.currState.name, c.l.curr_nibble_idx, c.l.loop_perm_to_count,
             //~ c.alu_busy, c.alu_result, c.l.alu_args.d1, c.l.alu_args.d2, c.word2_is_signed_and_negative,
             //~ c.l.result_carry, c.l.ctrl.ctrl.carry_in, c.pc, c.instr,
-            //~ c.register_file[c.rs1], c.rs1,
-            //~ c.register_file[c.rs2], c.rs2,
-            //~ c.register_file[c.rd], c.rd,
-            //~ (c.opCode == LUI) ? c.lui_result : 32'(c.immediate_value),
+            //~ c.register_file[c.instr.rs1], c.instr.rs1,
+            //~ c.register_file[c.instr.rs2], c.instr.rs2,
+            //~ c.register_file[c.instr.rd], c.instr.rd,
+            //~ c.decoded.immediate_value20,
             //~ c.write_enable ? "W" : "R" , c.write_enable ? c.bus_to_mem_32 : c.bus_from_mem_32, c.mem_addr_bus
         //~ );
 
