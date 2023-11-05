@@ -85,7 +85,11 @@ typedef union packed
 
 typedef struct packed
 {
-    InstructionPayload ip;
+    logic[6:0] funct7;
+    RegAddr rs2;
+    RegAddr rs1;
+    logic[2:0] funct3;
+    RegAddr rd;
     OpCode opCode;
     logic[1:0] unused_always11; // TODO: add check if not equal to 'b11
 } Instruction;
@@ -108,6 +112,12 @@ typedef struct packed {
     logic isUnsignedCompOrLeftShift;
 } DecodedAluCmd;
 
+typedef struct packed {
+    logic[11:0] immediate_value12;
+    logic[19:0] immediate_value20;
+    logic isStoreFunct3msbEnabledError; // 14 bit of instruction can't be 1 for STORE instr
+} WiredDecisions;
+
 module instr_stencil
     (
         input Instruction instr,
@@ -123,7 +133,7 @@ module instr_stencil
     assign opCode = instr.opCode;
 
     always_comb
-        unique case(en::RiscV_Spec_AluCmd'(instr.ip.rr.functor))
+        unique case(en::RiscV_Spec_AluCmd'(instr.funct3))
             en::ADD:  decodedAluCmd.ctrl = ADD;
             en::SLL:  decodedAluCmd.ctrl = ADD;
             en::SLT:  decodedAluCmd.ctrl = COMP;
@@ -134,68 +144,26 @@ module instr_stencil
             en::AND:  decodedAluCmd.ctrl = AND;
         endcase
 
-    assign decodedAluCmd.isUnsignedCompOrLeftShift = instr.ip.rr.functor[0];
-
-    assign jumpAddr = {
-            instr.ip.b.sign,
-            instr.ip.b.offset_MSB,
-            instr.ip.b.offset_HighestPart,
-            instr.ip.b.offset_LowestPart
-        };
+    assign decodedAluCmd.isUnsignedCompOrLeftShift = instr.funct3[0];
 
     always_comb
         unique case(instr.opCode)
             LOAD,
             OP_IMM:
             begin
-                source_register_1 = instr.ip.ri.source_register_1;
-                register_out_addr = instr.ip.ri.dest_register;
-                immediate_value = instr.ip.ri.imm11;
+                source_register_1 = instr.rs1;
+                register_out_addr = instr.rd;
+                immediate_value = { instr.funct7, instr.rs2 };
             end
 
             STORE:
             begin
-                source_register_1 = instr.ip.s.source_register_1;
-                source_register_2 = instr.ip.s.source_register_2;
-                immediate_value = { instr.ip.s.imm2, instr.ip.s.imm1 };
+                source_register_1 = instr.rs1;
+                source_register_2 = instr.rs2;
+                immediate_value = { instr.funct7, instr.rd };
             end
 
             default: register_out_addr = 'x /* FIXME: add handling for unknown opcodes */;
         endcase
-
-endmodule
-
-module instr_stencil_test;
-    logic[31:0] registers[32];
-    Instruction instr;
-    OpCode opCode;
-    DecodedAluCmd aluCmd;
-    RegAddr reg_addr1;
-    RegAddr reg_addr2;
-    RegAddr reg_dst;
-    logic signed[11:0] jumpAddr;
-    logic[31:0] ret;
-
-    instr_stencil stencil(
-        .source_register_1(reg_addr1),
-        .source_register_2(reg_addr2),
-        .register_out_addr(reg_dst),
-        .*
-    );
-
-    initial begin
-        $monitor("instr=%b reg_addr=%0d", instr, reg_dst);
-
-        instr.ip.ri.dest_register = 2;
-        instr.ip.ri.imm11 = 123;
-        instr.opCode = OP_IMM;
-
-        for(logic[2:0] func3 = 0; func3 < 'b111; func3++) begin
-            #1
-            instr.ip.ri.functor = func3;
-        end
-
-        instr.opCode = OP;
-    end
 
 endmodule

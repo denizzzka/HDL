@@ -216,7 +216,7 @@ module control
                 end
 
                 LOAD: begin
-                    unique case(instr.ip.ri.funct3.load.width)
+                    unique case(instr.funct3[1:0])
                         // FIXME: signed flag must be obtained from funct3
                         BITS32: begin
                             // Calc mem address:
@@ -232,7 +232,7 @@ module control
                 end
 
                 STORE: begin
-                    unique case(instr.ip.s.width)
+                    unique case(instr.funct3[1:0])
                         BITS32: begin
                             // Calc mem address:
                             setAluArgs(
@@ -247,7 +247,7 @@ module control
                 end
 
                 LUI: begin
-                    lui_result = { instr.ip.u.immediate_value20, 12'b0 };
+                    lui_result = { instr[31:12], 12'b0 };
                 end
 
                 default: begin // FIXME: remove this line
@@ -281,7 +281,7 @@ module control
             INSTR_DECODE: begin end
             READ_MEMORY: register_file[rd] <= bus_from_mem_32;
             WRITE_MEMORY: begin end
-            STORE_ALU_RESULT: register_file[instr.ip.u.rd] <= (opCode == LUI) ? lui_result : alu_result;
+            STORE_ALU_RESULT: register_file[instr.rd] <= (opCode == LUI) ? lui_result : alu_result;
         endcase
 
 endmodule
