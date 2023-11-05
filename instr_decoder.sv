@@ -62,10 +62,7 @@ module instr_stencil
         input Instruction instr,
         output OpCode opCode,
         output DecodedAluCmd decodedAluCmd,
-        output wire WiredDecisions decoded,
-        output RegAddr source_register_1,
-        output RegAddr source_register_2,
-        output RegAddr register_out_addr
+        output wire WiredDecisions decoded
     );
 
     assign opCode = instr.opCode;
@@ -90,21 +87,9 @@ module instr_stencil
     always_comb
         unique case(instr.opCode)
             LOAD,
-            OP_IMM:
-            begin
-                source_register_1 = instr.rs1;
-                register_out_addr = instr.rd;
-                decoded.immediate_value12 = { instr.funct7, instr.rs2 };
-            end
-
-            STORE:
-            begin
-                source_register_1 = instr.rs1;
-                source_register_2 = instr.rs2;
-                decoded.immediate_value12 = { instr.funct7, instr.rd };
-            end
-
-            default: register_out_addr = 'x /* FIXME: add handling for unknown opcodes */;
+            OP_IMM: decoded.immediate_value12 = { instr.funct7, instr.rs2 };
+            STORE: decoded.immediate_value12 = { instr.funct7, instr.rd };
+            default: begin end /* FIXME: add handling for unknown opcodes */
         endcase
 
 endmodule

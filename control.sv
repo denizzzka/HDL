@@ -51,16 +51,8 @@ module control
     wire OpCode opCode;
     wire DecodedAluCmd decodedAluCmd;
     wire WiredDecisions decoded;
-    wire RegAddr rs1;
-    wire RegAddr rs2;
-    wire RegAddr rd;
 
-    instr_stencil i_s(
-            .source_register_1(rs1),
-            .source_register_2(rs2),
-            .register_out_addr(rd),
-            .*
-        );
+    instr_stencil i_s(.*);
 
     logic[2:0] loop_nibbles_number;
     AluCtrl alu_ctrl;
@@ -209,7 +201,7 @@ module control
                 OP_IMM: begin
                     setAluArgs(
                         BITS_12, SIGNED,
-                        register_file[rs1],
+                        register_file[instr.rs1],
                         32'(decoded.immediate_value12)
                     );
                 end
@@ -221,7 +213,7 @@ module control
                             // Calc mem address:
                             setAluArgs(
                                 BITS_12, SIGNED,
-                                register_file[rs1],
+                                register_file[instr.rs1],
                                 32'(decoded.immediate_value12)
                             );
                         end
@@ -236,7 +228,7 @@ module control
                             // Calc mem address:
                             setAluArgs(
                                 BITS_12, SIGNED,
-                                register_file[rs1],
+                                register_file[instr.rs1],
                                 32'(decoded.immediate_value12)
                             );
                         end
@@ -263,7 +255,7 @@ module control
             WRITE_MEMORY:
             begin
                 disableAlu();
-                prepareMemWrite(alu_result, register_file[rs2]);
+                prepareMemWrite(alu_result, register_file[instr.rs2]);
             end
 
             default:
@@ -278,7 +270,7 @@ module control
             INCR_PC_CALC: begin end
             INCR_PC_STORE: pc <= alu_result;
             INSTR_DECODE: begin end
-            READ_MEMORY: register_file[rd] <= bus_from_mem_32;
+            READ_MEMORY: register_file[instr.rd] <= bus_from_mem_32;
             WRITE_MEMORY: begin end
             STORE_ALU_RESULT: register_file[instr.rd] <= (opCode == LUI) ? lui_result : alu_result;
         endcase
