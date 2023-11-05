@@ -24,12 +24,8 @@ module CtrlStateFSM
     assign alu_perm_to_count = need_alu;
 
     always_ff @(posedge clk)
-        if(~alu_busy) begin
+        if(~alu_busy)
             currState <= nextState;
-
-            // TODO: move all ALU stuff into one dedicated place
-            alu_ctrl.ctrl.carry_in <= 0;
-        end
 
 endmodule
 

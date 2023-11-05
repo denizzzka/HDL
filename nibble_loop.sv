@@ -84,7 +84,10 @@ module loopOverAllNibbles
 
     always_ff @(posedge clk) begin
         if(~loop_perm_to_count)
+        begin
+            ctrl.ctrl.carry_in <= 0;
             result <= preinit_result;
+        end
         else
             if(busy)
             begin
