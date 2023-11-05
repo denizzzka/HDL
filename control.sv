@@ -5,7 +5,7 @@ typedef enum logic[2:0] {
     INSTR_DECODE, // and call ALU if need
     READ_MEMORY,
     WRITE_MEMORY,
-    STORE_ALU_RESULT
+    STORE_RESULT
 } ControlState;
 
 module CtrlStateFSM
@@ -154,10 +154,10 @@ module control
                 unique case(opCode)
                     LOAD: nextState = READ_MEMORY;
                     STORE: nextState = WRITE_MEMORY;
-                    default: nextState = STORE_ALU_RESULT;
+                    default: nextState = STORE_RESULT;
                 endcase
             end
-            STORE_ALU_RESULT: nextState = INSTR_FETCH;
+            STORE_RESULT: nextState = INSTR_FETCH;
             READ_MEMORY: nextState = INSTR_FETCH;
             WRITE_MEMORY: nextState = INSTR_FETCH;
         endcase
@@ -175,7 +175,7 @@ module control
         bus_to_mem_32 = data;
     endfunction
 
-    logic[31:0] lui_result;
+    logic[31:0] result;
 
     always_comb
         unique case(currState)
@@ -204,6 +204,8 @@ module control
                         register_file[instr.rs1],
                         32'(decoded.immediate_value12)
                     );
+
+                    result = alu_result;
                 end
 
                 LOAD: begin
@@ -238,7 +240,7 @@ module control
                 end
 
                 LUI: begin
-                    lui_result = { instr[31:12], 12'b0 };
+                    result = { instr[31:12], 12'b0 };
                 end
 
                 default: begin // FIXME: remove this line
@@ -272,7 +274,7 @@ module control
             INSTR_DECODE: begin end
             READ_MEMORY: register_file[instr.rd] <= bus_from_mem_32;
             WRITE_MEMORY: begin end
-            STORE_ALU_RESULT: register_file[instr.rd] <= (opCode == LUI) ? lui_result : alu_result;
+            STORE_RESULT: register_file[instr.rd] <= result;
         endcase
 
 endmodule
@@ -333,7 +335,7 @@ module control_test;
         //~ $dumpvars(0, control_test);
 
         // Initial state
-        c.currState = STORE_ALU_RESULT;
+        c.currState = STORE_RESULT;
 
         assert(clk == 0);
 
