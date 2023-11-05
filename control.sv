@@ -184,6 +184,8 @@ module control
         bus_to_mem_32 = data;
     endfunction
 
+    logic[31:0] lui_result;
+
     always_comb
         unique case(currState)
             INSTR_FETCH:
@@ -244,6 +246,10 @@ module control
                     endcase
                 end
 
+                LUI: begin
+                    lui_result = { instr.ip.u.immediate_value20, 12'b0 };
+                end
+
                 default: begin // FIXME: remove this line
                     disableAlu();
                 end
@@ -275,7 +281,7 @@ module control
             INSTR_DECODE: begin end
             READ_MEMORY: register_file[rd] <= bus_from_mem_32;
             WRITE_MEMORY: begin end
-            STORE_ALU_RESULT: register_file[rd] <= alu_result;
+            STORE_ALU_RESULT: register_file[instr.ip.u.rd] <= (opCode == LUI) ? lui_result : alu_result;
         endcase
 
 endmodule
@@ -291,6 +297,7 @@ module control_test;
         32'b00000000010100101010001110000011, // lw x7, 5(x5)
         32'b11111110011100101010111100100011, // sw x7, -2(x5)
         32'b10000000000000000000010010010011, // addi x9, x0, 0x800 (-2048)
+        32'h_000f0537,                        // lui x10, 240
         32'b00000000000000000000000001110011 // ecall/ebreak
     };
 
@@ -317,7 +324,7 @@ module control_test;
             //~ c.register_file[c.rs1], c.rs1,
             //~ c.register_file[c.rs2], c.rs2,
             //~ c.register_file[c.rd], c.rd,
-            //~ c.immediate_value,
+            //~ (c.opCode == LUI) ? c.lui_result : 32'(c.immediate_value),
             //~ c.write_enable ? "W" : "R" , c.write_enable ? c.bus_to_mem_32 : c.bus_from_mem_32, c.mem_addr_bus
         //~ );
 
@@ -344,6 +351,8 @@ module control_test;
             clk = ~clk;
         end
 
+        assert(clk == 0);
+
         assert(c.register_file[5] == 123); else $error(c.register_file[5]);
         assert(c.register_file[6] == 125); else $error(c.register_file[6]);
 
@@ -355,6 +364,9 @@ module control_test;
 
         // addi with negative arg
         assert(c.register_file[9] == -2048); else $error("%d %h", $signed(c.register_file[9]), c.register_file[9]);
+
+        // Check LUI:
+        assert(c.register_file[10] == {20'(240), 12'h_000}); else $error("%h %h", c.register_file[10], {20'(240), 12'h_000});
     end
 
 endmodule

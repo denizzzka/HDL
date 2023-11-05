@@ -59,6 +59,12 @@ typedef struct packed
 
 typedef struct packed
 {
+    logic[19:0] immediate_value20;
+    RegAddr rd;
+} UpperImmediateInstr;
+
+typedef struct packed
+{
     logic sign;
     logic[5:0] offset_HighestPart;
     RegAddr source_register_2; // rs2
@@ -73,6 +79,7 @@ typedef union packed
     RegisterImmediateInstr ri;
     RegisterRegisterInstr rr;
     StoreInstr s;
+    UpperImmediateInstr u;
     BranchingInstr b;
 } InstructionPayload;
 
