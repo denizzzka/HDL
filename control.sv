@@ -50,6 +50,7 @@ module control
     Instruction instr;
     wire OpCode opCode;
     wire DecodedAluCmd decodedAluCmd;
+    wire WiredDecisions decoded;
     wire signed[11:0] jumpAddr;
     wire[11:0] immediate_value;
     wire RegAddr rs1;
@@ -216,7 +217,7 @@ module control
                 end
 
                 LOAD: begin
-                    unique case(instr.funct3[1:0])
+                    unique case(decoded.width)
                         // FIXME: signed flag must be obtained from funct3
                         BITS32: begin
                             // Calc mem address:
@@ -232,7 +233,7 @@ module control
                 end
 
                 STORE: begin
-                    unique case(instr.funct3[1:0])
+                    unique case(decoded.width)
                         BITS32: begin
                             // Calc mem address:
                             setAluArgs(

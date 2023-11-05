@@ -116,6 +116,7 @@ typedef struct packed {
     logic[11:0] immediate_value12;
     logic[19:0] immediate_value20;
     logic isStoreFunct3msbEnabledError; // 14 bit of instruction can't be 1 for STORE instr
+    LoadStoreResultWidth width;
 } WiredDecisions;
 
 module instr_stencil
@@ -123,6 +124,7 @@ module instr_stencil
         input Instruction instr,
         output OpCode opCode,
         output DecodedAluCmd decodedAluCmd,
+        output wire WiredDecisions decoded,
         output RegAddr source_register_1,
         output RegAddr source_register_2,
         output wire signed[11:0] immediate_value,
@@ -131,6 +133,7 @@ module instr_stencil
     );
 
     assign opCode = instr.opCode;
+    assign decoded.width = LoadStoreResultWidth'(instr.funct3[1:0]);
 
     always_comb
         unique case(en::RiscV_Spec_AluCmd'(instr.funct3))
