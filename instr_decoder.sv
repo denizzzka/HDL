@@ -22,69 +22,6 @@ typedef enum logic[1:0] {
 
 typedef struct packed
 {
-    logic isSigned;
-    LoadStoreResultWidth width;
-} FunctLoad;
-
-typedef struct packed
-{
-    logic[11:0] imm11;
-    RegAddr source_register_1; // rs1
-    union packed
-    {
-        logic[2:0] funct3;
-        FunctLoad load;
-    } funct3;
-    RegAddr dest_register; // rd
-} RegisterImmediateInstr;
-
-typedef struct packed
-{
-    logic[6:0] funct7;
-    RegAddr source_register_2; // rs2
-    RegAddr source_register_1; // rs1
-    logic[2:0] functor; // func3
-    RegAddr dest_register; // rd
-} RegisterRegisterInstr;
-
-typedef struct packed
-{
-    logic[6:0] imm2;
-    RegAddr source_register_2; // rs2
-    RegAddr source_register_1; // rs1
-    logic unused_must_be_zero; //TODO: add error check
-    LoadStoreResultWidth width;
-    logic[4:0] imm1;
-} StoreInstr;
-
-typedef struct packed
-{
-    logic[19:0] immediate_value20;
-    RegAddr rd;
-} UpperImmediateInstr;
-
-typedef struct packed
-{
-    logic sign;
-    logic[5:0] offset_HighestPart;
-    RegAddr source_register_2; // rs2
-    RegAddr source_register_1; // rs1
-    logic[2:0] functor; // func3
-    logic[3:0] offset_LowestPart;
-    logic offset_MSB; // 0xef00 (3840 decimal) will be encoded as 0b0_1110000000_1
-} BranchingInstr;
-
-typedef union packed
-{
-    RegisterImmediateInstr ri;
-    RegisterRegisterInstr rr;
-    StoreInstr s;
-    UpperImmediateInstr u;
-    BranchingInstr b;
-} InstructionPayload;
-
-typedef struct packed
-{
     logic[6:0] funct7;
     RegAddr rs2;
     RegAddr rs1;
@@ -116,6 +53,7 @@ typedef struct packed {
     logic[11:0] immediate_value12;
     logic[19:0] immediate_value20;
     logic isStoreFunct3msbEnabledError; // 14 bit of instruction can't be 1 for STORE instr
+    logic isLoadingSignedValue;
     LoadStoreResultWidth width;
 } WiredDecisions;
 
@@ -132,6 +70,7 @@ module instr_stencil
     );
 
     assign opCode = instr.opCode;
+    assign decoded.isLoadingSignedValue = instr.funct3[2];
     assign decoded.width = LoadStoreResultWidth'(instr.funct3[1:0]);
     assign decoded.immediate_value20 = instr[31:12];
 
