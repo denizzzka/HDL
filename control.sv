@@ -52,7 +52,6 @@ module control
     wire DecodedAluCmd decodedAluCmd;
     wire WiredDecisions decoded;
     wire signed[11:0] jumpAddr;
-    wire[11:0] immediate_value;
     wire RegAddr rs1;
     wire RegAddr rs2;
     wire RegAddr rd;
@@ -212,7 +211,7 @@ module control
                     setAluArgs(
                         BITS_12, SIGNED,
                         register_file[rs1],
-                        32'(immediate_value)
+                        32'(decoded.immediate_value12)
                     );
                 end
 
@@ -224,7 +223,7 @@ module control
                             setAluArgs(
                                 BITS_12, SIGNED,
                                 register_file[rs1],
-                                32'(immediate_value)
+                                32'(decoded.immediate_value12)
                             );
                         end
 
@@ -239,7 +238,7 @@ module control
                             setAluArgs(
                                 BITS_12, SIGNED,
                                 register_file[rs1],
-                                32'(immediate_value)
+                                32'(decoded.immediate_value12)
                             );
                         end
 

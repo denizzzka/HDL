@@ -127,13 +127,13 @@ module instr_stencil
         output wire WiredDecisions decoded,
         output RegAddr source_register_1,
         output RegAddr source_register_2,
-        output wire signed[11:0] immediate_value,
         output logic signed[11:0] jumpAddr, //TODO: remove?
         output RegAddr register_out_addr
     );
 
     assign opCode = instr.opCode;
     assign decoded.width = LoadStoreResultWidth'(instr.funct3[1:0]);
+    assign decoded.immediate_value20 = instr[31:12];
 
     always_comb
         unique case(en::RiscV_Spec_AluCmd'(instr.funct3))
@@ -156,14 +156,14 @@ module instr_stencil
             begin
                 source_register_1 = instr.rs1;
                 register_out_addr = instr.rd;
-                immediate_value = { instr.funct7, instr.rs2 };
+                decoded.immediate_value12 = { instr.funct7, instr.rs2 };
             end
 
             STORE:
             begin
                 source_register_1 = instr.rs1;
                 source_register_2 = instr.rs2;
-                immediate_value = { instr.funct7, instr.rd };
+                decoded.immediate_value12 = { instr.funct7, instr.rd };
             end
 
             default: register_out_addr = 'x /* FIXME: add handling for unknown opcodes */;
