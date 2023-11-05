@@ -65,7 +65,6 @@ module instr_stencil
         output wire WiredDecisions decoded,
         output RegAddr source_register_1,
         output RegAddr source_register_2,
-        output logic signed[11:0] jumpAddr, //TODO: remove?
         output RegAddr register_out_addr
     );
 

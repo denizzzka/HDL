@@ -51,7 +51,6 @@ module control
     wire OpCode opCode;
     wire DecodedAluCmd decodedAluCmd;
     wire WiredDecisions decoded;
-    wire signed[11:0] jumpAddr;
     wire RegAddr rs1;
     wire RegAddr rs2;
     wire RegAddr rd;
