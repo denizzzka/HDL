@@ -19,12 +19,23 @@ module Ram
     assign bus_from_mem = mem[addr8 +: 8];
     assign bus_from_mem_32 = mem[addr8 +: 32];
 
-    always_ff @(posedge clk)
+    wire forceable_clk;
+    assign forceable_clk = clk;
+
+    always_ff @(posedge forceable_clk)
         if(write_enable)
             if(~is32bitWrite)
                 mem[addr8 +: 8] <= bus_to_mem;
             else
                 mem[addr8 +: 32] <= bus_to_mem_32;
+
+    task forceClkCycle;
+        assert(forceable_clk == 0);
+
+        #1 force forceable_clk = 1;
+        #1 force forceable_clk = 0;
+        #1 release forceable_clk;
+    endtask
 endmodule
 
 module Ram_test;

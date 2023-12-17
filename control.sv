@@ -175,6 +175,18 @@ module control
         bus_to_mem_32 = data;
     endfunction
 
+    task memWrite32(input[31:0] address, input[31:0] data);
+        force write_enable = 1;
+        force mem_addr_bus = address;
+        force bus_to_mem_32 = data;
+
+        mem.forceClkCycle();
+
+        release write_enable;
+        release mem_addr_bus;
+        release bus_to_mem_32;
+    endtask
+
     logic[31:0] result;
 
     always_comb
@@ -302,19 +314,13 @@ module control_test;
 
     initial begin
         localparam start_address = 'hff; // First instruction, leads carry on PC calculation for test purpose
-        localparam start_addres_in_bits = start_address * 8;
 
         c.pc = start_address;
 
-        c.mem.mem[128*8 +: 8] = 'h58; // for lw command check
+        c.memWrite32(128, 'h58); // for lw command check
 
         foreach(rom[i])
-        begin
-            int n = i*32 + start_addres_in_bits;
-
-            c.mem.mem[n +: 32] = rom[i];
-        end
-
+            c.memWrite32(i*4 + start_address, rom[i]);
 
         //~ $monitor("clk=%b opCode=%s state=%s nibb=%h perm=%b busy=%b alu_ret=%h d1=%h d2=%h sig_neg=%b carry=(%b %b) pc=%h inst=%h rs1=%h(%h) rs2=%h(%h) rd=%h(%h) imm=%h mem32%s=%h(a:%h)",
             //~ clk, c.opCode.name, c.currState.name, c.l.curr_nibble_idx, c.l.loop_perm_to_count,
