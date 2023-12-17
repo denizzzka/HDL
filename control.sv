@@ -1,11 +1,12 @@
 typedef enum logic[2:0] {
+    RESET,
     INSTR_FETCH,
     INCR_PC_CALC,
-    INCR_PC_STORE,
+    INCR_PC_STORE, // Store incremented PC value from ALU accumulator register
     INSTR_DECODE, // and call ALU if need
     READ_MEMORY,
     WRITE_MEMORY,
-    STORE_RESULT,
+    //~ STORE_RESULT,
     ERROR
 } ControlState;
 
@@ -143,6 +144,7 @@ module control
 
     always_comb
         unique case(currState)
+            RESET: nextState = INSTR_FETCH;
             INSTR_FETCH: nextState = INCR_PC_CALC;
             INCR_PC_CALC: nextState = INCR_PC_STORE;
             INCR_PC_STORE: nextState = INSTR_DECODE;
@@ -156,7 +158,7 @@ module control
                     default: nextState = ERROR;
                 endcase
             end
-            STORE_RESULT: nextState = INSTR_FETCH;
+            //~ STORE_RESULT: nextState = INSTR_FETCH;
             READ_MEMORY: nextState = INSTR_FETCH;
             WRITE_MEMORY: nextState = INSTR_FETCH;
             ERROR: nextState = ERROR;
@@ -187,7 +189,7 @@ module control
         release bus_to_mem_32;
     endtask
 
-    logic[31:0] result;
+    logic[31:0] result; // TODO: merge with alu_result?
 
     always_comb
         unique case(currState)
@@ -280,6 +282,7 @@ module control
 
     always_ff @(posedge clk)
         unique case(currState)
+            RESET: begin end //FIXME: implement reset
             INSTR_FETCH: instr <= bus_from_mem_32;
             INCR_PC_CALC: begin end
             INCR_PC_STORE: pc <= alu_result;
@@ -291,7 +294,7 @@ module control
             end
             READ_MEMORY: register_file[instr.rd] <= bus_from_mem_32;
             WRITE_MEMORY: begin end
-            STORE_RESULT: register_file[instr.rd] <= result;
+            //~ STORE_RESULT: register_file[instr.rd] <= result;
             ERROR: begin end
         endcase
 
@@ -347,7 +350,7 @@ module control_test;
         //~ $dumpvars(0, control_test);
 
         // Initial state
-        c.currState = STORE_RESULT;
+        c.currState = RESET;
 
         assert(clk == 0);
 
