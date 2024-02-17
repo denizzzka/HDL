@@ -30,7 +30,7 @@ module CtrlStateFSM
 
 endmodule
 
-module control
+module control #(parameter START_ADDR = 0)
     (
         input wire clk
     );
@@ -39,7 +39,7 @@ module control
     logic[31:0] register_file[32]; //TODO: x0 is hardwired with all bits equal to 0
 
     function void resetRegisters;
-        pc <= 0;
+        pc <= START_ADDR;
 
         foreach(register_file[i])
             register_file[i] <= 0;
