@@ -38,6 +38,13 @@ module control
     logic[31:0] pc;
     logic[31:0] register_file[32]; //TODO: x0 is hardwired with all bits equal to 0
 
+    function void resetRegisters;
+        pc <= 0;
+
+        foreach(register_file[i])
+            register_file[i] <= 0;
+    endfunction
+
     ControlState currState;
     ControlState nextState;
     logic need_alu;
@@ -282,7 +289,7 @@ module control
 
     always_ff @(posedge clk)
         unique case(currState)
-            RESET: begin end //FIXME: implement reset
+            RESET: resetRegisters();
             INSTR_FETCH: instr <= bus_from_mem_32;
             INCR_PC_CALC: begin end
             INCR_PC_STORE: pc <= alu_result;
@@ -318,8 +325,6 @@ module control_test;
     initial begin
         localparam start_address = 'hff; // First instruction, leads carry on PC calculation for test purpose
 
-        c.pc = start_address;
-
         c.memWrite32(128, 'h58); // for lw command check
 
         foreach(rom[i])
@@ -351,6 +356,10 @@ module control_test;
 
         // Initial state
         c.currState = RESET;
+        #1 clk = ~clk;
+        #1 clk = ~clk;
+
+        c.pc = start_address;
 
         assert(clk == 0);
 
