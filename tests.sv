@@ -61,7 +61,7 @@ module control_test_bench;
             c.register_file[4] = 'h_110;
             c.register_file[6] = 'h_cafe_babe;
 
-            $monitor("Test #%0d clk_count=%0d clk=%b  state=%s opCode=%s prePC=%b pc=%h instr=%h loop_nibbles_number=%h nibble=%h alu_result=%h", i, clk_count, c.clk, c.currState.name, c.opCode.name, c.pre_incr_pc, c.pc, c.instr, c.loop_nibbles_number, c.l.curr_nibble_idx, c.alu_result);
+            $monitor("Test #%0d clk_count=%0d clk=%b state=%s next=%s opCode=%s prePC=%b pc=%h instr=%h loop_nibbles_number=%h nibble=%h alu_result=%h", i, clk_count, c.clk, c.currState.name, c.nextState.name, c.opCode.name, c.pre_incr_pc, c.pc, c.instr, c.loop_nibbles_number, c.l.curr_nibble_idx, c.alu_result);
 
             do begin
                 assert(c.currState != ERROR);

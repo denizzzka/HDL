@@ -16,6 +16,7 @@ module CtrlStateFSM
         input wire need_alu, // ...loop before next state
         input wire alu_busy,
         input wire ControlState nextState,
+        input wire pre_incr_pc,
         output wire alu_perm_to_count,
         output AluCtrl alu_ctrl,
         output wire ControlState currState
@@ -24,9 +25,25 @@ module CtrlStateFSM
     //TODO: remove
     assign alu_perm_to_count = need_alu;
 
+    ControlState _currState;
+
     always_ff @(posedge clk)
         if(~alu_busy)
-            currState <= nextState;
+            _currState <= nextState;
+
+    //FIXME: Оно тут по кругу крутится, надо выделить в отдельное состояние сразу и вычисления и инкремент PC
+
+    // This is need to avoid unnecessary clock step to decide
+    // next state in case of post-incremented PC instruction
+    always_comb
+        if(pre_incr_pc)
+            currState = _currState;
+        else // need to swap PC increment and execution
+            unique case(_currState)
+                INCR_PC_CALC: currState = INSTR_DECODE;
+                INSTR_DECODE: currState = INCR_PC_CALC;
+                default: currState = _currState;
+            endcase
 
 endmodule
 
@@ -45,7 +62,7 @@ module control #(parameter START_ADDR = 0)
             register_file[i] <= 0;
     endfunction
 
-    ControlState currState;
+    wire ControlState currState;
     ControlState nextState;
     logic need_alu;
     wire alu_busy;
