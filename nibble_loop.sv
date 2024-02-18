@@ -8,7 +8,7 @@ module loopOverAllNibbles
         ref wire AluCtrl ctrl,
         //TODO: rename to "is signed and negative"
         input wire word2_is_negative, // useful for SUB on signed values shorter than 8 nibbles
-        input wire[7:0][3:0] word1,
+        input wire[7:0][3:0] word1, //TODO: remove in favor to preinit_result value?
         input wire[7:0][3:0] word2,
         input wire[31:0] preinit_result,
         output wire busy,
@@ -167,6 +167,17 @@ module loopOverAllNibbles_test;
     initial begin
         //~ $dumpfile("loopOverAllNibbles_test.vcd");
         //~ $dumpvars(0, loopOverAllNibbles_test);
+
+        preinit_result = 32'h_ff0004;
+        loop_nibbles_number = 'b000;
+
+        loop_one_word(ADD, 32'h_ff0004, 4);
+        assert(result == 'h_ff0008); else $error("result=%h", result);
+
+        preinit_result = 'h_0000_0000;
+        loop_nibbles_number = 2;
+        loop_one_word(ADD, 0, 'h_07b);
+        assert(result == 'h_07b); else $error("result=%h", result);
 
         preinit_result = 'h_f000_0000;
         loop_nibbles_number = 'b111;
