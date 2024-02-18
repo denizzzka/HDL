@@ -9,20 +9,17 @@ endmodule
 
 // TODO: implement tests for all instructions
 module control_test_bench;
-    typedef struct packed
+    typedef struct
     {
         logic[31:0] instr;
         logic[31:0] ret_must_be;
     } TestCmd;
 
-    //FIXME: Verilator issue? It wants first struct as a separate defined variable for some reason
-    localparam TestCmd s = '{ instr: 'h_07b08293 /* addi x5, x1, 123 */, ret_must_be: 123 };
-
     TestCmd cmdsToTest[] =
-    {
-        s // addi x5, x1, 123
-        //~ '{instr: 'h_07b08293, ret_must_be: 123} //FIXME
-    };
+        '{
+            '{instr: 'h_07b08293, ret_must_be: 123}, // addi x5, x1, 123
+            '{instr: 'h_07b08293, ret_must_be: 123} //TODO: replace by another test
+        };
 
     // all commands starting from this address
     localparam start_addr = 32'h_ff0004;
