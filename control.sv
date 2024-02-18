@@ -149,18 +149,20 @@ module control #(parameter START_ADDR = 0)
 
     Ram#('hffff/4) mem(.addr(mem_addr_bus), .*);
 
+    // Increment PC before executing instruction?
+    wire pre_incr_pc = (opCode != AUIPC);
+
     always_comb
         unique case(currState)
             RESET: nextState = INSTR_FETCH;
-            INSTR_FETCH: nextState = INCR_PC_CALC;
+            INSTR_FETCH: nextState = pre_incr_pc ? INCR_PC_CALC : INSTR_DECODE;
             INCR_PC_CALC: nextState = INCR_PC_STORE;
-            INCR_PC_STORE: nextState = INSTR_DECODE;
+            INCR_PC_STORE: nextState = pre_incr_pc ? INSTR_DECODE : INSTR_FETCH;
             INSTR_DECODE:
             begin
                 unique case(opCode)
-                    OP_IMM,
-                    LUI,
-                    AUIPC: nextState = INSTR_FETCH;
+                    OP_IMM, LUI: nextState = INSTR_FETCH;
+                    AUIPC: nextState = INCR_PC_CALC;
                     LOAD: nextState = READ_MEMORY;
                     STORE: nextState = WRITE_MEMORY;
                     default: nextState = ERROR;
@@ -234,7 +236,7 @@ module control #(parameter START_ADDR = 0)
 
                 AUIPC: begin
                     setAluArgs(
-                        BITS_12, SIGNED,
+                        BITS_32, SIGNED,
                         pc,
                         { instr[31:12], 12'b0 }
                     );
@@ -305,7 +307,7 @@ module control #(parameter START_ADDR = 0)
             INSTR_DECODE:
             begin
                 // Short cycle, like as for LUI instruction
-                if(nextState == INSTR_FETCH)
+                if(nextState == INSTR_FETCH || nextState == INCR_PC_CALC)
                     register_file[instr.rd] <= result;
             end
             READ_MEMORY: register_file[instr.rd] <= bus_from_mem_32;
