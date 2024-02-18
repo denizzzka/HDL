@@ -159,7 +159,8 @@ module control #(parameter START_ADDR = 0)
             begin
                 unique case(opCode)
                     OP_IMM,
-                    LUI: nextState = INSTR_FETCH;
+                    LUI,
+                    AUIPC: nextState = INSTR_FETCH;
                     LOAD: nextState = READ_MEMORY;
                     STORE: nextState = WRITE_MEMORY;
                     default: nextState = ERROR;
@@ -229,8 +230,16 @@ module control #(parameter START_ADDR = 0)
                     result = alu_result;
                 end
 
-                LUI: begin
-                    result = { instr[31:12], 12'b0 };
+                LUI: result = { instr[31:12], 12'b0 };
+
+                AUIPC: begin
+                    setAluArgs(
+                        BITS_12, SIGNED,
+                        pc,
+                        { instr[31:12], 12'b0 }
+                    );
+
+                    result = alu_result;
                 end
 
                 LOAD: begin
