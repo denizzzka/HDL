@@ -19,6 +19,7 @@ module control_test_bench;
         '{
             '{instr: 'h_07b08293, ret_must_be: 123}, // addi x5, x1, 123
             '{instr: 'h_07b10293, ret_must_be: 124}, // addi x5, x2, 123
+            '{instr: 'h_ffe10293, ret_must_be: -1},  // addi x5, x2, -2
             '{instr: 'h_0081a283, ret_must_be: 'h_feff_1111}, // lw x5, 8(x3)
             '{instr: 'h_ff822283, ret_must_be: 'h_feff_1111}, // lw x5, -8(x4)
             '{instr: 'h_07b08293, ret_must_be: 123} //TODO: replace by another test
