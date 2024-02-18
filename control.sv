@@ -31,7 +31,7 @@ module CtrlStateFSM
         if(~alu_busy)
             _currState <= nextState;
 
-    //FIXME: Оно тут по кругу крутится, надо выделить в отдельное состояние сразу и вычисления и инкремент PC
+    //FIXME: Оно тут по кругу крутится, надо выделить в два чередующихся состояния вычисления и инкремент PC
 
     // This is need to avoid unnecessary clock step to decide
     // next state in case of post-incremented PC instruction
