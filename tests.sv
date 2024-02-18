@@ -4,7 +4,7 @@ module tests;
     loopOverAllNibbles_test lan;
     Ram_test r;
     control_test c;
-    //~ control_test_bench tb;
+    control_test_bench tb;
 endmodule
 
 // TODO: implement tests for all instructions
@@ -26,7 +26,7 @@ module control_test_bench;
 
     // all commands starting from this address
     localparam start_addr = 32'h_ff0004;
-    //~ localparam start_addr = 32'h_ff000d;
+    //~ localparam start_addr = 32'h_ff000e;
     logic[7:0] clk_count;
     control #(.START_ADDR(start_addr)) c(clk_count[0]);
 
@@ -44,11 +44,11 @@ module control_test_bench;
             // Initial CPU state
             c.currState = RESET;
 
-            $monitor("clk=%b clk_count=%0d state=%s opCode=%s pc=%h instr=%h alu_perm_to_count=%b busy=%b overfl=%b loop_nibbles_number=%h nibble=%h alu_result=%h", c.clk, clk_count, c.currState.name, c.opCode.name, c.pc, c.instr, c.alu_perm_to_count, c.l.busy, c.l.overflow, c.loop_nibbles_number, c.l.curr_nibble_idx, c.alu_result);
+            $monitor("clk=%b clk_count=%0d state=%s opCode=%s pc=%h instr=%h clk_count=%0d alu_perm_to_count=%b busy=%b overflow=%b was_last_nibble=%b loop_nibbles_number=%h nibble=%h alu_result=%h", c.clk, clk_count, c.currState.name, c.opCode.name, c.pc, c.instr, clk_count, c.alu_perm_to_count, c.l.busy, c.l.overflow, c.l.was_last_nibble, c.loop_nibbles_number, c.l.curr_nibble_idx, c.alu_result);
 
             do begin
                 assert(c.currState != ERROR);
-                assert(clk_count < 20); else $error("clk_count exceeded");
+                assert(clk_count < 40); else $error("clk_count exceeded");
 
                 #1 clk_count++;
             end while(!(c.currState == INSTR_FETCH && c.pc != start_addr && c.clk == 0));

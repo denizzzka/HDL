@@ -36,7 +36,7 @@ module loopOverAllNibbles
     logic was_last_nibble;
 
     always_ff @(posedge clk)
-        if(last_nibble)
+        if(last_nibble && loop_perm_to_count)
             was_last_nibble <= 1;
 
     always_ff @(posedge clk)
