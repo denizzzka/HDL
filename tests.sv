@@ -24,8 +24,8 @@ module control_test_bench;
             '{instr: 'h_ffe10293, ret_must_be: -1, check_memory: 0},  // addi x5, x2, -2
             '{instr: 'h_0081a283, ret_must_be: 'h_feff_1111, check_memory: 0},  // lw x5, 8(x3)
             '{instr: 'h_ff822283, ret_must_be: 'h_feff_1111, check_memory: 0},  // lw x5, -8(x4)
-            '{instr: 'h_fe622c23, ret_must_be: 'h_cafe_babe, check_memory: 1 }, // sw x6, -8(x4)
-            '{instr: 'h_fffff2b7, ret_must_be: 'h_fffff000, check_memory: 0 }   // lui x5, 0xfffff
+            '{instr: 'h_fe622c23, ret_must_be: 'h_cafe_babe, check_memory: 1},  // sw x6, -8(x4)
+            '{instr: 'h_fffff2b7, ret_must_be: 'h_fffff000, check_memory: 0}    // lui x5, 0xfffff
         };
 
     // all commands starting from this address
