@@ -18,6 +18,7 @@ module control_test_bench;
     TestCmd cmdsToTest[] =
         '{
             '{instr: 'h_07b08293, ret_must_be: 123}, // addi x5, x1, 123
+            '{instr: 'h_07b10293, ret_must_be: 124}, // addi x5, x2, 123
             '{instr: 'h_07b08293, ret_must_be: 123} //TODO: replace by another test
         };
 
@@ -39,6 +40,11 @@ module control_test_bench;
 
             // Initial CPU state
             c.currState = RESET;
+
+            // Predefined register values
+            #1 clk_count++;
+            #1 clk_count++;
+            c.register_file[2] = 1;
 
             //~ $monitor("clk=%b clk_count=%0d state=%s opCode=%s pc=%h instr=%h clk_count=%0d alu_perm_to_count=%b busy=%b overflow=%b was_last_nibble=%b loop_nibbles_number=%h nibble=%h alu_result=%h", c.clk, clk_count, c.currState.name, c.opCode.name, c.pc, c.instr, clk_count, c.alu_perm_to_count, c.l.busy, c.l.overflow, c.l.was_last_nibble, c.loop_nibbles_number, c.l.curr_nibble_idx, c.alu_result);
 
