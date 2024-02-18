@@ -13,16 +13,18 @@ module control_test_bench;
     {
         logic[31:0] instr;
         logic[31:0] ret_must_be;
+        logic check_memory; // otherwise x5 register
     } TestCmd;
 
     TestCmd cmdsToTest[] =
         '{
-            '{instr: 'h_07b08293, ret_must_be: 123}, // addi x5, x1, 123
-            '{instr: 'h_07b10293, ret_must_be: 124}, // addi x5, x2, 123
-            '{instr: 'h_ffe10293, ret_must_be: -1},  // addi x5, x2, -2
-            '{instr: 'h_0081a283, ret_must_be: 'h_feff_1111}, // lw x5, 8(x3)
-            '{instr: 'h_ff822283, ret_must_be: 'h_feff_1111}, // lw x5, -8(x4)
-            '{instr: 'h_07b08293, ret_must_be: 123} //TODO: replace by another test
+            // rd is always x5:
+            '{instr: 'h_07b08293, ret_must_be: 123, check_memory: 0}, // addi x5, x1, 123
+            '{instr: 'h_07b10293, ret_must_be: 124, check_memory: 0}, // addi x5, x2, 123
+            '{instr: 'h_ffe10293, ret_must_be: -1, check_memory: 0},  // addi x5, x2, -2
+            '{instr: 'h_0081a283, ret_must_be: 'h_feff_1111, check_memory: 0}, // lw x5, 8(x3)
+            '{instr: 'h_ff822283, ret_must_be: 'h_feff_1111, check_memory: 0}, // lw x5, -8(x4)
+            '{instr: 'h_fe622c23, ret_must_be: 'h_cafe_babe, check_memory: 1 } // sw x6, -8(x4)
         };
 
     // all commands starting from this address
@@ -31,6 +33,7 @@ module control_test_bench;
     control #(.START_ADDR(start_addr)) c(clk_count[0]);
 
     TestCmd cmd;
+    logic[31:0] ret;
 
     initial begin
         foreach(cmdsToTest[i])
@@ -53,6 +56,7 @@ module control_test_bench;
             c.register_file[2] = 1;
             c.register_file[3] = 'h_100;
             c.register_file[4] = 'h_110;
+            c.register_file[6] = 'h_cafe_babe;
 
             //~ $monitor("clk=%b clk_count=%0d state=%s opCode=%s pc=%h instr=%h clk_count=%0d alu_perm_to_count=%b busy=%b overflow=%b was_last_nibble=%b loop_nibbles_number=%h nibble=%h alu_result=%h", c.clk, clk_count, c.currState.name, c.opCode.name, c.pc, c.instr, clk_count, c.alu_perm_to_count, c.l.busy, c.l.overflow, c.l.was_last_nibble, c.loop_nibbles_number, c.l.curr_nibble_idx, c.alu_result);
 
@@ -64,8 +68,12 @@ module control_test_bench;
             end while(!(c.currState == INSTR_FETCH && c.pc != start_addr && c.clk == 0));
 
             // command done, check result
-            // rd is always x5
-            assert(c.register_file[5] == cmd.ret_must_be); else $error("Test #%0d: rd=%h but expected %h", i, c.register_file[5], cmd.ret_must_be);
+            if(!cmd.check_memory)
+                ret = c.register_file[5];
+            else
+                ret = c.mem.mem['h_108*8 +: 32];
+
+            assert(ret == cmd.ret_must_be); else $error("Test #%0d: ret=%h but expected %h", i, ret, cmd.ret_must_be);
 
             assert(c.pc == start_addr + 4); else $error("%h", c.pc);
         end
