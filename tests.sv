@@ -19,6 +19,8 @@ module control_test_bench;
         '{
             '{instr: 'h_07b08293, ret_must_be: 123}, // addi x5, x1, 123
             '{instr: 'h_07b10293, ret_must_be: 124}, // addi x5, x2, 123
+            '{instr: 'h_0081a283, ret_must_be: 'h_feff_1111}, // lw x5, 8(x3)
+            '{instr: 'h_ff822283, ret_must_be: 'h_feff_1111}, // lw x5, -8(x4)
             '{instr: 'h_07b08293, ret_must_be: 123} //TODO: replace by another test
         };
 
@@ -35,6 +37,9 @@ module control_test_bench;
             clk_count = 0;
             cmd = cmdsToTest[i];
 
+            // Predefined memory values
+            c.memWrite32('h_108, 'h_feff_1111); // some value for commands check
+
             // Place instruction into RAM
             c.memWrite32(start_addr, cmd.instr);
 
@@ -45,6 +50,8 @@ module control_test_bench;
             #1 clk_count++;
             #1 clk_count++;
             c.register_file[2] = 1;
+            c.register_file[3] = 'h_100;
+            c.register_file[4] = 'h_110;
 
             //~ $monitor("clk=%b clk_count=%0d state=%s opCode=%s pc=%h instr=%h clk_count=%0d alu_perm_to_count=%b busy=%b overflow=%b was_last_nibble=%b loop_nibbles_number=%h nibble=%h alu_result=%h", c.clk, clk_count, c.currState.name, c.opCode.name, c.pc, c.instr, clk_count, c.alu_perm_to_count, c.l.busy, c.l.overflow, c.l.was_last_nibble, c.loop_nibbles_number, c.l.curr_nibble_idx, c.alu_result);
 
