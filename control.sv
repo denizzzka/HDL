@@ -86,6 +86,7 @@ module control #(parameter START_ADDR = 0)
         BITS_8,
         BITS_12,
         BITS_16,
+        BITS_24,
         BITS_32
     } AluMode;
 
@@ -115,6 +116,7 @@ module control #(parameter START_ADDR = 0)
             BITS_8: loop_nibbles_number = 1;
             BITS_12: loop_nibbles_number = 2;
             BITS_16: loop_nibbles_number = 3;
+            BITS_24: loop_nibbles_number = 4;
             BITS_32: loop_nibbles_number = 7;
         endcase
 
@@ -127,6 +129,7 @@ module control #(parameter START_ADDR = 0)
             BITS_8: msb = word2[7];
             BITS_12: msb = word2[11];
             BITS_16: msb = word2[15];
+            BITS_24: msb = word2[23];
             BITS_32: msb = word2[31];
             default: msb = 'x;
         endcase
@@ -176,7 +179,7 @@ module control #(parameter START_ADDR = 0)
             INSTR_DECODE:
             begin
                 unique case(opCode)
-                    OP_IMM, LUI: nextState = INSTR_FETCH;
+                    OP_IMM, LUI, JAL: nextState = INSTR_FETCH;
                     AUIPC: nextState = INCR_PC_PRELOAD;
                     LOAD: nextState = READ_MEMORY;
                     STORE: nextState = WRITE_MEMORY;
@@ -189,7 +192,12 @@ module control #(parameter START_ADDR = 0)
             default: nextState = ERROR;
         endcase
 
-    assign alu_preinit_result = (nextState == INCR_PC_CALC || nextState == INCR_PC_CALC_POST) ? pc : 0;
+    // TODO: move to always_comb
+    assign alu_preinit_result = (
+        nextState == INCR_PC_CALC ||
+        nextState == INCR_PC_CALC_POST ||
+        (currState == INCR_PC_STORE && opCode == JAL)
+    ) ? pc : 0;
 
     function void prepareMemRead(input[31:0] address);
         write_enable = 0;
@@ -262,6 +270,16 @@ module control #(parameter START_ADDR = 0)
                     result = alu_result;
                 end
 
+                JAL: begin
+                    setAluArgs(
+                        BITS_24, SIGNED,
+                        pc,
+                        32'(decoded.immediate_value20)
+                    );
+
+                    result = alu_result;
+                end
+
                 LOAD: begin
                     unique case(decoded.width)
                         // FIXME: signed flag must be obtained from funct3
@@ -323,11 +341,20 @@ module control #(parameter START_ADDR = 0)
             INCR_PC_PRELOAD,
             INCR_PC_CALC,
             INCR_PC_CALC_POST: begin end
-            INCR_PC_STORE: pc <= alu_result;
+            INCR_PC_STORE:
+            begin
+                if(opCode == JAL)
+                    register_file[instr.rd] <= alu_result;
+                else
+                    pc <= alu_result;
+            end
             INSTR_DECODE:
             begin
                 // Short cycle, like as for LUI instruction
-                if(nextState == INSTR_FETCH || nextState == INCR_PC_PRELOAD)
+                if(
+                    nextState == INSTR_FETCH ||
+                    nextState == INCR_PC_PRELOAD
+                )
                     register_file[instr.rd] <= result;
             end
             READ_MEMORY: register_file[instr.rd] <= bus_from_mem_32;
