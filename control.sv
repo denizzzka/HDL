@@ -9,7 +9,6 @@ typedef enum logic[3:0] {
     INSTR_BRANCH, // Processing instruction which implies PC changing
     READ_MEMORY,
     WRITE_MEMORY,
-    //~ STORE_RESULT,
     ERROR
 } ControlState;
 
@@ -366,7 +365,6 @@ module control #(parameter START_ADDR = 0)
             INSTR_BRANCH: pc <= alu_result;
             READ_MEMORY: register_file[instr.rd] <= bus_from_mem_32;
             WRITE_MEMORY: begin end
-            //~ STORE_RESULT: register_file[instr.rd] <= result;
             ERROR: begin end
         endcase
 
