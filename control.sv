@@ -6,6 +6,7 @@ typedef enum logic[3:0] {
     INCR_PC_PRELOAD, // Need to preload ALU before INCR_PC_CALC_POST will be called
     INCR_PC_STORE, // Store incremented PC value from ALU accumulator register
     INSTR_DECODE, // and call ALU if need
+    INSTR_BRANCH, // Processing instruction which implies PC changing
     READ_MEMORY,
     WRITE_MEMORY,
     //~ STORE_RESULT,
@@ -116,7 +117,7 @@ module control #(parameter START_ADDR = 0)
             BITS_8: loop_nibbles_number = 1;
             BITS_12: loop_nibbles_number = 2;
             BITS_16: loop_nibbles_number = 3;
-            BITS_24: loop_nibbles_number = 4;
+            BITS_24: loop_nibbles_number = 5;
             BITS_32: loop_nibbles_number = 7;
         endcase
 
@@ -175,7 +176,7 @@ module control #(parameter START_ADDR = 0)
             INCR_PC_CALC: nextState = INCR_PC_STORE;
             INCR_PC_PRELOAD: nextState = INCR_PC_CALC_POST;
             INCR_PC_CALC_POST: nextState = INCR_PC_STORE;
-            INCR_PC_STORE: nextState = pre_incr_pc ? INSTR_DECODE : INSTR_FETCH;
+            INCR_PC_STORE: nextState = pre_incr_pc ? (opCode == JAL ? INSTR_BRANCH : INSTR_DECODE) : INSTR_FETCH;
             INSTR_DECODE:
             begin
                 unique case(opCode)
@@ -186,7 +187,7 @@ module control #(parameter START_ADDR = 0)
                     default: nextState = ERROR;
                 endcase
             end
-            //~ STORE_RESULT: nextState = INSTR_FETCH;
+            INSTR_BRANCH: nextState = INSTR_FETCH;
             READ_MEMORY: nextState = INSTR_FETCH;
             WRITE_MEMORY: nextState = INSTR_FETCH;
             default: nextState = ERROR;
@@ -264,17 +265,7 @@ module control #(parameter START_ADDR = 0)
                     setAluArgs(
                         BITS_32, SIGNED,
                         pc,
-                        { instr[31:12], 12'b0 }
-                    );
-
-                    result = alu_result;
-                end
-
-                JAL: begin
-                    setAluArgs(
-                        BITS_24, SIGNED,
-                        pc,
-                        32'(decoded.immediate_value20)
+                        { instr[31:12], 12'b0 } //TODO: replace instr[] by decoded.immediate_value20
                     );
 
                     result = alu_result;
@@ -314,6 +305,21 @@ module control #(parameter START_ADDR = 0)
                 default: begin // FIXME: remove this line
                     disableAlu();
                 end
+            endcase
+
+            INSTR_BRANCH:
+            unique case(opCode)
+                JAL: begin
+                    setAluArgs(
+                        BITS_24, SIGNED,
+                        pc,
+                        { 11'b0, decoded.immediate_jump }
+                    );
+
+                    result = alu_result;
+                end
+
+                default: disableAlu();
             endcase
 
             READ_MEMORY:
@@ -357,6 +363,7 @@ module control #(parameter START_ADDR = 0)
                 )
                     register_file[instr.rd] <= result;
             end
+            INSTR_BRANCH: pc <= alu_result;
             READ_MEMORY: register_file[instr.rd] <= bus_from_mem_32;
             WRITE_MEMORY: begin end
             //~ STORE_RESULT: register_file[instr.rd] <= result;

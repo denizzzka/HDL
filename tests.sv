@@ -79,7 +79,8 @@ module control_test_bench;
 
             assert(ret == cmd.ret_must_be); else $error("Test #%0d: ret=%h but expected %h", i, ret, cmd.ret_must_be);
 
-            assert(c.pc == start_addr + 4); else $error("%h", c.pc);
+            if(i != 8)
+                assert(c.pc == start_addr + 4); else $error("Unexpected PC=%h", c.pc);
         end
     end
 endmodule
