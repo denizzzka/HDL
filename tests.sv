@@ -1,9 +1,9 @@
 module tests;
-    //~ full_adder_test fa;
-    //~ alu_test a;
-    //~ loopOverAllNibbles_test lan;
-    //~ Ram_test r;
-    //~ control_test c;
+    full_adder_test fa;
+    alu_test a;
+    loopOverAllNibbles_test lan;
+    Ram_test r;
+    control_test c;
     control_test_bench tb;
 endmodule
 
@@ -29,7 +29,7 @@ module control_test_bench;
             '{instr: 'h_ff822283, ret_must_be: 'h_feff_1111, check_memory: 0},  // lw x5, -8(x4)
             '{instr: 'h_fe622c23, ret_must_be: 'h_cafe_babe, check_memory: 1},  // sw x6, -8(x4)
             '{instr: 'h_fffff2b7, ret_must_be: 'h_fffff000, check_memory: 0},   // lui x5, 0xfffff
-            '{instr: 'h_ffff0297, ret_must_be: start_addr-16, check_memory: 0}  // auipc x5, -16
+            '{instr: 'h_ffff0297, ret_must_be: start_addr + (-16 << 12), check_memory: 0}  // auipc x5, -16
         };
 
     logic[7:0] clk_count;
@@ -61,7 +61,7 @@ module control_test_bench;
             c.register_file[4] = 'h_110;
             c.register_file[6] = 'h_cafe_babe;
 
-            $monitor("Test #%0d clk_count=%0d clk=%b state=%s next=%s opCode=%s prePC=%b pc=%h instr=%h loop_nibbles_number=%h nibble=%h alu_result=%h", i, clk_count, c.clk, c.currState.name, c.nextState.name, c.opCode.name, c.pre_incr_pc, c.pc, c.instr, c.loop_nibbles_number, c.l.curr_nibble_idx, c.alu_result);
+            //~ $monitor("Test #%0d clk_count=%0d clk=%b state=%s next=%s opCode=%s prePC=%b pc=%h instr=%h loop_nibbles_number=%h nibble=%h alu_result=%h", i, clk_count, c.clk, c.currState.name, c.nextState.name, c.opCode.name, c.pre_incr_pc, c.pc, c.instr, c.loop_nibbles_number, c.l.curr_nibble_idx, c.alu_result);
 
             do begin
                 assert(c.currState != ERROR);

@@ -1,7 +1,9 @@
-typedef enum logic[2:0] {
+typedef enum logic[3:0] {
     RESET,
-    INSTR_FETCH,
+    INSTR_FETCH, // Also preloads PC to ALU
     INCR_PC_CALC,
+    INCR_PC_CALC_POST, // Same as INCR_PC_CALC but to distinguish return path after "on the fly" currState substitution
+    INCR_PC_PRELOAD, // Need to preload ALU before INCR_PC_CALC_POST will be called
     INCR_PC_STORE, // Store incremented PC value from ALU accumulator register
     INSTR_DECODE, // and call ALU if need
     READ_MEMORY,
@@ -31,19 +33,13 @@ module CtrlStateFSM
         if(~alu_busy)
             _currState <= nextState;
 
-    //FIXME: Оно тут по кругу крутится, надо выделить в два чередующихся состояния вычисления и инкремент PC
-
-    // This is need to avoid unnecessary clock step to decide
+    // This conditional is need to avoid unnecessary clock step to decide
     // next state in case of post-incremented PC instruction
     always_comb
-        if(pre_incr_pc)
+        if(_currState == INCR_PC_CALC && !pre_incr_pc) // need to change path on the fly?
+            currState = INSTR_DECODE;
+        else
             currState = _currState;
-        else // need to swap PC increment and execution
-            unique case(_currState)
-                INCR_PC_CALC: currState = INSTR_DECODE;
-                INSTR_DECODE: currState = INCR_PC_CALC;
-                default: currState = _currState;
-            endcase
 
 endmodule
 
@@ -172,14 +168,16 @@ module control #(parameter START_ADDR = 0)
     always_comb
         unique case(currState)
             RESET: nextState = INSTR_FETCH;
-            INSTR_FETCH: nextState = pre_incr_pc ? INCR_PC_CALC : INSTR_DECODE;
+            INSTR_FETCH: nextState = INCR_PC_CALC;
             INCR_PC_CALC: nextState = INCR_PC_STORE;
+            INCR_PC_PRELOAD: nextState = INCR_PC_CALC_POST;
+            INCR_PC_CALC_POST: nextState = INCR_PC_STORE;
             INCR_PC_STORE: nextState = pre_incr_pc ? INSTR_DECODE : INSTR_FETCH;
             INSTR_DECODE:
             begin
                 unique case(opCode)
                     OP_IMM, LUI: nextState = INSTR_FETCH;
-                    AUIPC: nextState = INCR_PC_CALC;
+                    AUIPC: nextState = INCR_PC_PRELOAD;
                     LOAD: nextState = READ_MEMORY;
                     STORE: nextState = WRITE_MEMORY;
                     default: nextState = ERROR;
@@ -188,10 +186,10 @@ module control #(parameter START_ADDR = 0)
             //~ STORE_RESULT: nextState = INSTR_FETCH;
             READ_MEMORY: nextState = INSTR_FETCH;
             WRITE_MEMORY: nextState = INSTR_FETCH;
-            ERROR: nextState = ERROR;
+            default: nextState = ERROR;
         endcase
 
-    assign alu_preinit_result = (currState == INSTR_FETCH) ? pc : 0;
+    assign alu_preinit_result = (nextState == INCR_PC_CALC || nextState == INCR_PC_CALC_POST) ? pc : 0;
 
     function void prepareMemRead(input[31:0] address);
         write_enable = 0;
@@ -226,7 +224,10 @@ module control #(parameter START_ADDR = 0)
                 prepareMemRead(pc);
             end
 
-            INCR_PC_CALC:
+            INCR_PC_PRELOAD: disableAlu();
+
+            INCR_PC_CALC,
+            INCR_PC_CALC_POST:
             begin
                 setAluArgs(
                     INCREMENT, UNSIGNED,
@@ -319,12 +320,14 @@ module control #(parameter START_ADDR = 0)
         unique case(currState)
             RESET: resetRegisters();
             INSTR_FETCH: instr <= bus_from_mem_32;
-            INCR_PC_CALC: begin end
+            INCR_PC_PRELOAD,
+            INCR_PC_CALC,
+            INCR_PC_CALC_POST: begin end
             INCR_PC_STORE: pc <= alu_result;
             INSTR_DECODE:
             begin
                 // Short cycle, like as for LUI instruction
-                if(nextState == INSTR_FETCH || nextState == INCR_PC_CALC)
+                if(nextState == INSTR_FETCH || nextState == INCR_PC_PRELOAD)
                     register_file[instr.rd] <= result;
             end
             READ_MEMORY: register_file[instr.rd] <= bus_from_mem_32;
