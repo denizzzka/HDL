@@ -5,7 +5,7 @@ typedef enum logic[3:0] {
     INCR_PC_CALC_POST, // Same as INCR_PC_CALC but to distinguish return path after "on the fly" currState substitution
     INCR_PC_PRELOAD, // Need to preload ALU before INCR_PC_CALC_POST will be called
     INCR_PC_STORE, // Store incremented PC value from ALU accumulator register
-    INSTR_DECODE, // and call ALU if need
+    INSTR_PROCESS, // Calls ALU if need
     INSTR_BRANCH, // Processing instruction which implies PC changing
     READ_MEMORY,
     WRITE_MEMORY,
@@ -37,7 +37,7 @@ module CtrlStateFSM
     // next state in case of post-incremented PC instruction
     always_comb
         if(_currState == INCR_PC_CALC && !pre_incr_pc) // need to change path on the fly?
-            currState = INSTR_DECODE;
+            currState = INSTR_PROCESS;
         else
             currState = _currState;
 
@@ -175,8 +175,8 @@ module control #(parameter START_ADDR = 0)
             INCR_PC_CALC: nextState = INCR_PC_STORE;
             INCR_PC_PRELOAD: nextState = INCR_PC_CALC_POST;
             INCR_PC_CALC_POST: nextState = INCR_PC_STORE;
-            INCR_PC_STORE: nextState = pre_incr_pc ? (opCode == JAL ? INSTR_BRANCH : INSTR_DECODE) : INSTR_FETCH;
-            INSTR_DECODE:
+            INCR_PC_STORE: nextState = pre_incr_pc ? (opCode == JAL ? INSTR_BRANCH : INSTR_PROCESS) : INSTR_FETCH;
+            INSTR_PROCESS:
             begin
                 unique case(opCode)
                     OP_IMM, LUI, JAL: nextState = INSTR_FETCH;
@@ -246,7 +246,7 @@ module control #(parameter START_ADDR = 0)
 
             INCR_PC_STORE: disableAlu();
 
-            INSTR_DECODE:
+            INSTR_PROCESS:
             unique case(opCode)
                 OP_IMM: begin
                     setAluArgs(
@@ -353,7 +353,7 @@ module control #(parameter START_ADDR = 0)
                 else
                     pc <= alu_result;
             end
-            INSTR_DECODE:
+            INSTR_PROCESS:
             begin
                 // Short cycle, like as for LUI instruction
                 if(
