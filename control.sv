@@ -259,13 +259,13 @@ module control #(parameter START_ADDR = 0)
                     result = alu_result;
                 end
 
-                LUI: result = { instr[31:12], 12'b0 };
+                LUI: result = { decoded.immediate_value20, 12'b0 };
 
                 AUIPC: begin
                     setAluArgs(
                         BITS_32, SIGNED,
                         pc,
-                        { instr[31:12], 12'b0 } //TODO: replace instr[] by decoded.immediate_value20
+                        { decoded.immediate_value20, 12'b0 }
                     );
 
                     result = alu_result;
