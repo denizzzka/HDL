@@ -222,8 +222,6 @@ module control #(parameter START_ADDR = 0)
         release bus_to_mem_32;
     endtask
 
-    logic[31:0] result; // TODO: merge with alu_result?
-
     always_comb
         unique case(currState)
             INSTR_FETCH:
@@ -254,11 +252,7 @@ module control #(parameter START_ADDR = 0)
                         register_file[instr.rs1],
                         32'(decoded.immediate_value12)
                     );
-
-                    result = alu_result;
                 end
-
-                LUI: result = { decoded.immediate_value20, 12'b0 };
 
                 AUIPC: begin
                     setAluArgs(
@@ -266,8 +260,6 @@ module control #(parameter START_ADDR = 0)
                         pc,
                         { decoded.immediate_value20, 12'b0 }
                     );
-
-                    result = alu_result;
                 end
 
                 LOAD: begin
@@ -314,8 +306,6 @@ module control #(parameter START_ADDR = 0)
                         pc,
                         { 8'b0, decoded.immediate_jump }
                     );
-
-                    result = alu_result;
                 end
 
                 default: disableAlu();
@@ -360,7 +350,7 @@ module control #(parameter START_ADDR = 0)
                     nextState == INSTR_FETCH ||
                     nextState == INCR_PC_PRELOAD
                 )
-                    register_file[instr.rd] <= result;
+                    register_file[instr.rd] <= (opCode != LUI) ? alu_result : { decoded.immediate_value20, 12'b0 };
             end
             INSTR_BRANCH: pc <= alu_result;
             READ_MEMORY: register_file[instr.rd] <= bus_from_mem_32;
