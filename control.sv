@@ -313,7 +313,7 @@ module control #(parameter START_ADDR = 0)
                     setAluArgs(
                         BITS_24, SIGNED,
                         pc,
-                        { 11'b0, decoded.immediate_jump }
+                        { 8'b0, decoded.immediate_jump }
                     );
 
                     result = alu_result;

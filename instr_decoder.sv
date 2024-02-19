@@ -52,7 +52,7 @@ typedef struct packed {
 typedef struct packed {
     logic[11:0] immediate_value12;
     logic[19:0] immediate_value20;
-    logic[20:0] immediate_jump;
+    logic[23:0] immediate_jump;
     logic isStoreFunct3msbEnabledError; // 14 bit of instruction can't be 1 for STORE instr
     logic isLoadingSignedValue;
     LoadStoreResultWidth width;
@@ -70,7 +70,7 @@ module instr_stencil
     assign decoded.isLoadingSignedValue = instr.funct3[2];
     assign decoded.width = LoadStoreResultWidth'(instr.funct3[1:0]);
     assign decoded.immediate_value20 = instr[31:12];
-    assign decoded.immediate_jump = { instr[31], instr[19:12],  instr[20], instr[30:21], 1'b0 };
+    assign decoded.immediate_jump = { instr[31], instr[31], instr[31], instr[31], instr[19:12],  instr[20], instr[30:21], 1'b0 };
 
     always_comb
         unique case(en::RiscV_Spec_AluCmd'(instr.funct3))
