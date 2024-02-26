@@ -314,7 +314,8 @@ module control #(parameter START_ADDR = 0)
             unique case(opCode)
                 JAL:
                     setAluArgs(
-                        BITS_24, SIGNED, // TODO: use BITS_20 here
+                        // TODO: Can loop over 20 bits only and use MSB to stop. Will save a whole cycle. Implies ALU changes
+                        BITS_24, SIGNED,
                         pc,
                         { 8'b0, decoded.immediate_jump }
                     );
