@@ -30,7 +30,8 @@ module control_test_bench;
             '{instr: 'h_fe622c23, ret_must_be: 'h_cafe_babe, check_memory: 1},  // sw x6, -8(x4)
             '{instr: 'h_fffff2b7, ret_must_be: 'h_fffff000, check_memory: 0},   // lui x5, 0xfffff
             '{instr: 'h_ffff0297, ret_must_be: start_addr + (-16 << 12), check_memory: 0},  // auipc x5, -16
-            '{instr: 'h_ff9ff2ef, ret_must_be: start_addr + 4, check_memory: 0}   // jal x5, -8
+            '{instr: 'h_ff9ff2ef, ret_must_be: start_addr + 4, check_memory: 0},    // jal x5, -8
+            '{instr: 'h_ff8502e7, ret_must_be: start_addr + 4, check_memory: 0}     // jalr x5, -8(x10)
         };
 
     logic[7:0] clk_count;
@@ -61,8 +62,10 @@ module control_test_bench;
             c.register_file[3] = 'h_100;
             c.register_file[4] = 'h_110;
             c.register_file[6] = 'h_cafe_babe;
+            c.register_file[10] = start_addr;
 
             //~ $monitor("Test #%0d clk_count=%0d clk=%b state=%s next=%s opCode=%s prePC=%b pc=%h instr=%h nnumber=%h nibble=%h alu_result=%h", i, clk_count, c.clk, c.currState.name, c.nextState.name, c.opCode.name, c.pre_incr_pc, c.pc, c.instr, c.loop_nibbles_number, c.l.curr_nibble_idx, c.alu_result);
+            //~ $monitor("Test #%0d state=%s next=%s opCode=%s prePC=%b pc=%h instr=%h nnumber=%h nibble=%h alu_result=%h alu_w2=%h", i, c.currState.name, c.nextState.name, c.opCode.name, c.pre_incr_pc, c.pc, c.instr, c.loop_nibbles_number, c.l.curr_nibble_idx, c.alu_result, c.alu_w2);
 
             do begin
                 assert(c.currState != ERROR);
@@ -79,10 +82,10 @@ module control_test_bench;
 
             assert(ret == cmd.ret_must_be); else $error("Test #%0d: ret=%h but expected %h", i, ret, cmd.ret_must_be);
 
-            if(i != 8)
+            if(!(i == 8 || i == 9))
                 assert(c.pc == start_addr + 4); else $error("Unexpected PC=%h", c.pc);
-            else
-                assert(c.pc == start_addr - 8); else $error("Unexpected PC=%h", c.pc);
+            else // jal || jarl
+                assert(c.pc == start_addr - 8); else $error("Unexpected PC=%h (expected %h)", c.pc, start_addr - 8);
         end
     end
 endmodule

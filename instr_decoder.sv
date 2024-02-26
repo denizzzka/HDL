@@ -89,9 +89,10 @@ module instr_stencil
     always_comb
         unique case(instr.opCode)
             LOAD,
-            OP_IMM: decoded.immediate_value12 = { instr.funct7, instr.rs2 };
+            OP_IMM,
+            JALR: decoded.immediate_value12 = { instr.funct7, instr.rs2 };
             STORE: decoded.immediate_value12 = { instr.funct7, instr.rd };
-            default: begin end /* FIXME: add handling for unknown opcodes */
+            default: decoded.immediate_value12 = 'h_ded; /* FIXME: add handling for unknown opcodes */
         endcase
 
 endmodule

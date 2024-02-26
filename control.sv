@@ -77,7 +77,7 @@ module control #(parameter START_ADDR = 0)
     logic word2_is_signed_and_negative;
     logic[31:0] alu_w1;
     logic[31:0] alu_w2;
-    wire[31:0] alu_preinit_result;
+    logic[31:0] alu_preinit_result;
     logic[31:0] alu_result;
 
     typedef enum {
@@ -174,11 +174,11 @@ module control #(parameter START_ADDR = 0)
             INCR_PC_CALC: nextState = INCR_PC_STORE;
             INCR_PC_PRELOAD: nextState = INCR_PC_CALC_POST;
             INCR_PC_CALC_POST: nextState = INCR_PC_STORE;
-            INCR_PC_STORE: nextState = pre_incr_pc ? (opCode == JAL ? INSTR_BRANCH : INSTR_PROCESS) : INSTR_FETCH;
+            INCR_PC_STORE: nextState = pre_incr_pc ? ((opCode == JAL || opCode == JALR) ? INSTR_BRANCH : INSTR_PROCESS) : INSTR_FETCH;
             INSTR_PROCESS:
             begin
                 unique case(opCode)
-                    OP_IMM, LUI, JAL: nextState = INSTR_FETCH;
+                    OP_IMM, LUI, JAL, JALR: nextState = INSTR_FETCH;
                     AUIPC: nextState = INCR_PC_PRELOAD;
                     LOAD: nextState = READ_MEMORY;
                     STORE: nextState = WRITE_MEMORY;
@@ -191,12 +191,25 @@ module control #(parameter START_ADDR = 0)
             default: nextState = ERROR;
         endcase
 
-    // TODO: move to always_comb
-    assign alu_preinit_result = (
-        nextState == INCR_PC_CALC ||
-        nextState == INCR_PC_CALC_POST ||
-        (currState == INCR_PC_STORE && opCode == JAL)
-    ) ? pc : 0;
+    // TODO: move to FSM always_comb block?
+    always_comb
+        unique case(nextState)
+            INCR_PC_CALC,
+            INCR_PC_CALC_POST:
+                alu_preinit_result = pc;
+
+            default:
+            begin
+                if(currState != INCR_PC_STORE)
+                    alu_preinit_result = 0;
+                else
+                    unique case(opCode)
+                        JAL: alu_preinit_result = pc;
+                        JALR: alu_preinit_result = register_file[instr.rs1];
+                        default: alu_preinit_result = 0;
+                    endcase
+            end
+        endcase
 
     function void prepareMemRead(input[31:0] address);
         write_enable = 0;
@@ -299,13 +312,25 @@ module control #(parameter START_ADDR = 0)
 
             INSTR_BRANCH:
             unique case(opCode)
-                JAL: begin
+                JAL:
                     setAluArgs(
-                        BITS_24, SIGNED,
+                        BITS_24, SIGNED, // TODO: use BITS_20 here
                         pc,
                         { 8'b0, decoded.immediate_jump }
                     );
-                end
+
+                JALR:
+                    setAluArgs(
+                        BITS_12, SIGNED,
+                        register_file[instr.rs1],
+                        32'(decoded.immediate_value12)
+                    );
+                    /* TODO: RISC-V spec:
+                    The JALR instruction now clears the lowest bit of
+                    the calculated target address, to simplify hardware
+                    and to allow auxiliary information to be stored in
+                    function pointers.
+                    */
 
                 default: disableAlu();
             endcase
@@ -337,7 +362,7 @@ module control #(parameter START_ADDR = 0)
             INCR_PC_CALC_POST: begin end
             INCR_PC_STORE:
             begin
-                if(opCode == JAL)
+                if(opCode == JAL || opCode == JALR)
                     register_file[instr.rd] <= alu_result;
                 else
                     pc <= alu_result;
