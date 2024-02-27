@@ -166,7 +166,7 @@ module control #(parameter START_ADDR = 0)
     Ram#('hffff/4) mem(.addr(mem_addr_bus), .*);
 
     // Increment PC before executing instruction?
-    wire pre_incr_pc = (opCode != AUIPC);
+    wire pre_incr_pc = !(opCode == AUIPC || opCode == BRANCH);
 
     always_comb
         unique case(currState)
@@ -180,7 +180,8 @@ module control #(parameter START_ADDR = 0)
             begin
                 unique case(opCode)
                     OP_IMM, LUI, JAL, JALR: nextState = INSTR_FETCH;
-                    AUIPC: nextState = INCR_PC_PRELOAD;
+                    AUIPC,
+                    BRANCH: nextState = INCR_PC_PRELOAD;
                     LOAD: nextState = READ_MEMORY;
                     STORE: nextState = WRITE_MEMORY;
                     default: nextState = ERROR;
@@ -206,7 +207,7 @@ module control #(parameter START_ADDR = 0)
                 else
                     unique case(opCode)
                         JAL: alu_preinit_result = pc;
-                        JALR: alu_preinit_result = register_file[instr.rs1];
+                        JALR,
                         BRANCH: alu_preinit_result = register_file[instr.rs1];
                         default: alu_preinit_result = 0;
                     endcase
@@ -236,6 +237,9 @@ module control #(parameter START_ADDR = 0)
         release bus_to_mem_32;
     endtask
 
+    wire rs1 = register_file[instr.rs1];
+    wire rs2 = register_file[instr.rs2];
+
     always_comb
         unique case(currState)
             INSTR_FETCH:
@@ -260,21 +264,25 @@ module control #(parameter START_ADDR = 0)
 
             INSTR_PROCESS:
             unique case(opCode)
-                OP_IMM: begin
+                OP_IMM:
                     setAluArgs(
                         BITS_12, ADD, SIGNED,
                         register_file[instr.rs1],
                         32'(decoded.immediate_value12)
                     );
-                end
 
-                AUIPC: begin
+                AUIPC:
                     setAluArgs(
                         BITS_32, ADD, SIGNED,
                         pc,
                         { decoded.immediate_value20, 12'b0 }
                     );
-                end
+
+                BRANCH:
+                    setAluArgs(
+                        BITS_32, COMP, UNSIGNED,
+                        rs1, rs2
+                    );
 
                 LOAD: begin
                     unique case(decoded.width)
