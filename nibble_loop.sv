@@ -65,7 +65,8 @@ module loopOverAllNibbles
 
     // Support small signed word2 values
     // For example, if 0x0 arg nibble passed it inverts it to 0xF
-    wire invert_curr_nibble = word2_is_signed_and_negative && was_last_nibble;
+    wire invert_curr_nibble = (word2_is_signed_and_negative && was_last_nibble)
+        || ctrl.ctrl.b_inv;
 
     wire AluArgs alu_args;
     wire AluRet alu_ret;
@@ -120,8 +121,8 @@ module loopOverAllNibbles_test;
             input[31:0] w2
         );
 
-        //~ $monitor("clk=%b perm=%b reverse=%b idx=%h ctrl=%b d1=%h d2=%h alu_ret=%h result=%h proc_not_all=%b result_carry=%b was_last=%b busy=%b",
-            //~ clk, l.loop_perm_to_count, l.reverse_direction, l.curr_nibble_idx, l.alu_args.ctrl, l.alu_args.d1, l.alu_args.d2, l.alu_ret.res, result, ~l.process_done, l.result_carry, l.was_last_nibble, busy);
+        //~ $monitor("clk=%b perm=%b reverse=%b idx=%h ctrl=%b b_inv=%b d1=%h d2=%h alu_ret=%h result=%h proc_not_all=%b result_carry=%b was_last=%b busy=%b",
+            //~ clk, l.loop_perm_to_count, l.reverse_direction, l.curr_nibble_idx, l.alu_args.ctrl, l.alu_args.ctrl.ctrl.b_inv, l.alu_args.d1, l.alu_args.d2, l.alu_ret.res, result, ~l.process_done, l.result_carry, l.was_last_nibble, busy);
 
         //~ $display("cycle started");
 
@@ -141,10 +142,9 @@ module loopOverAllNibbles_test;
         clk = 1;
         #1
         clk = 0;
-        ctrl.ctrl.carry_in = 0;
         loop_perm_to_count = 1;
 
-        //~ $display("cmd assigned");
+        //~ $display("assigned ctrl=%b", ctrl);
 
         #1
         clk = 1;
@@ -215,5 +215,8 @@ module loopOverAllNibbles_test;
 
         loop_one_word(RSHFT, 'h_xxxx_xxxx, RSH_VAL);
         assert(result == RSH_VAL >> 1); else $error("word2=%b result=%b must be=%b", word2, result, RSH_VAL >> 1);
+
+        loop_one_word(COMP, 'h_1234_1234, 'h_1234_1234); // A-B-1 operation
+        assert(result == 'h_ffff_ffff); else $error("result=%h", result);
     end
 endmodule
