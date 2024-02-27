@@ -99,6 +99,7 @@ module control #(parameter START_ADDR = 0)
     function void setAluArgs
         (
             input AluMode aluMode,
+            input AluCtrl ctrl,
             input Signed isSigned,
             input[31:0] word1,
             input[31:0] word2
@@ -139,7 +140,7 @@ module control #(parameter START_ADDR = 0)
     endfunction
 
     function void disableAlu;
-        setAluArgs(DISABLED, UNDEF, 'x, 'x);
+        setAluArgs(DISABLED, 5'bxxxxx, UNDEF, 'x, 'x);
     endfunction
 
     loopOverAllNibbles l(
@@ -206,6 +207,7 @@ module control #(parameter START_ADDR = 0)
                     unique case(opCode)
                         JAL: alu_preinit_result = pc;
                         JALR: alu_preinit_result = register_file[instr.rs1];
+                        BRANCH: alu_preinit_result = register_file[instr.rs1];
                         default: alu_preinit_result = 0;
                     endcase
             end
@@ -248,7 +250,7 @@ module control #(parameter START_ADDR = 0)
             INCR_PC_CALC_POST:
             begin
                 setAluArgs(
-                    INCREMENT, UNSIGNED,
+                    INCREMENT, ADD, UNSIGNED,
                     pc,
                     4 // PC increment value
                 );
@@ -260,7 +262,7 @@ module control #(parameter START_ADDR = 0)
             unique case(opCode)
                 OP_IMM: begin
                     setAluArgs(
-                        BITS_12, SIGNED,
+                        BITS_12, ADD, SIGNED,
                         register_file[instr.rs1],
                         32'(decoded.immediate_value12)
                     );
@@ -268,7 +270,7 @@ module control #(parameter START_ADDR = 0)
 
                 AUIPC: begin
                     setAluArgs(
-                        BITS_32, SIGNED,
+                        BITS_32, ADD, SIGNED,
                         pc,
                         { decoded.immediate_value20, 12'b0 }
                     );
@@ -280,7 +282,7 @@ module control #(parameter START_ADDR = 0)
                         BITS32: begin
                             // Calc mem address:
                             setAluArgs(
-                                BITS_12, SIGNED,
+                                BITS_12, ADD, SIGNED,
                                 register_file[instr.rs1],
                                 32'(decoded.immediate_value12)
                             );
@@ -295,7 +297,7 @@ module control #(parameter START_ADDR = 0)
                         BITS32: begin
                             // Calc mem address:
                             setAluArgs(
-                                BITS_12, SIGNED,
+                                BITS_12, ADD, SIGNED,
                                 register_file[instr.rs1],
                                 32'(decoded.immediate_value12)
                             );
@@ -315,14 +317,14 @@ module control #(parameter START_ADDR = 0)
                 JAL:
                     setAluArgs(
                         // TODO: Can loop over 20 bits only and use MSB to stop. Will save a whole cycle. Implies ALU changes
-                        BITS_24, SIGNED,
+                        BITS_24, ADD, SIGNED,
                         pc,
                         { 8'b0, decoded.immediate_jump }
                     );
 
                 JALR:
                     setAluArgs(
-                        BITS_12, SIGNED,
+                        BITS_12, ADD, SIGNED,
                         register_file[instr.rs1],
                         32'(decoded.immediate_value12)
                     );
