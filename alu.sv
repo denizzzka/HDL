@@ -32,8 +32,8 @@ typedef struct packed
 
 typedef struct packed
 {
+    logic carry_out;
     logic[3:0] res;
-    logic carry_out; //TODO: move to top of struct?
 } AluRet;
 
 module alu
