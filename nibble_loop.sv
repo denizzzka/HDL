@@ -6,7 +6,7 @@ module loopOverAllNibbles
         input wire loop_perm_to_count, // otherwise - reset
         input wire[2:0] loop_nibbles_number,
         input wire AluCtrl ctrl,
-        ref logic carry_in_out,
+        ref logic carry_in_out, // TODO: duplicates carry_in from AluCtrl ctrl
         input wire check_if_result_0xF, // for A==B comparison
         input wire word2_is_signed_and_negative, // useful for SUB on signed values shorter than 8 nibbles
         input wire[7:0][3:0] word1, //TODO: remove in favor to preinit_result value?
@@ -91,7 +91,9 @@ module loopOverAllNibbles
     always_ff @(posedge clk) begin
         if(~loop_perm_to_count)
         begin
-            //~ carry_in_out <= 0; //TODO: why we need to reset carry here?
+            if(~check_if_result_0xF)
+                carry_in_out <= 0;
+
             result <= preinit_result;
         end
         else

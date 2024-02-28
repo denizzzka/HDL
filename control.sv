@@ -112,10 +112,12 @@ module control #(parameter START_ADDR = 0)
         alu_w1 = word1;
         alu_w2 = word2;
         alu_ctrl = ctrl;
-        carry_in_out = 0;
 
         need_alu = (aluMode != DISABLED);
-        assign check_if_result_0xF = (aluMode == BITS_32_COMPARE);
+        assign check_if_result_0xF = (
+            aluMode == BITS_32_COMPARE ||
+            aluMode == DISABLED // used as flag for keep carry value
+        );
 
         unique case(aluMode)
             DISABLED: begin end
@@ -265,8 +267,8 @@ module control #(parameter START_ADDR = 0)
             begin
                 if(opCode == BRANCH && comparison_result) // conditional jump?
                     setAluArgs(
-                        BITS_12, ADD, SIGNED, pc,
-                        { 19'b0, decoded.immediate_value12, 1'b0 } // B-immediate value
+                        BITS_16, ADD, SIGNED, pc,
+                        { 16'b0, decoded.immediate_valueB }
                     );
                 else
                     setAluArgs(

@@ -53,6 +53,7 @@ typedef struct packed {
     logic[11:0] immediate_value12;
     logic[19:0] immediate_value20;
     logic[23:0] immediate_jump;
+    logic[15:0] immediate_valueB;
     logic isStoreFunct3msbEnabledError; // 14 bit of instruction can't be 1 for STORE instr
     logic isLoadingSignedValue;
     LoadStoreResultWidth width;
@@ -92,7 +93,7 @@ module instr_stencil
             OP_IMM,
             JALR: decoded.immediate_value12 = { instr.funct7, instr.rs2 };
             STORE: decoded.immediate_value12 = { instr.funct7, instr.rd };
-            BRANCH: decoded.immediate_value12 = { instr.funct7[6], instr.rd[4], instr.funct7[5:0], instr.rd[4:1] }; //TODO: brrr!
+            BRANCH: decoded.immediate_valueB = { instr.funct7[6], instr.funct7[6], instr.funct7[6], instr.funct7[6], instr.rd[4], instr.funct7[5:0], instr.rd[4:1], 1'b0 }; //TODO: brrr!
             default: decoded.immediate_value12 = 'h_ded; /* FIXME: add handling for unknown opcodes */
         endcase
 
