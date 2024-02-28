@@ -91,9 +91,7 @@ module loopOverAllNibbles
     always_ff @(posedge clk) begin
         if(~loop_perm_to_count)
         begin
-            if(~check_if_result_0xF)
-                carry_in_out <= 0;
-
+            carry_in_out <= 0;
             result <= preinit_result;
         end
         else
