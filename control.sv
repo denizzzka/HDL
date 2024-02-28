@@ -112,6 +112,7 @@ module control #(parameter START_ADDR = 0)
         alu_w1 = word1;
         alu_w2 = word2;
         alu_ctrl = ctrl;
+        carry_in_out = 0;
 
         need_alu = (aluMode != DISABLED);
         assign check_if_result_0xF = (aluMode == BITS_32_COMPARE);

@@ -91,7 +91,7 @@ module loopOverAllNibbles
     always_ff @(posedge clk) begin
         if(~loop_perm_to_count)
         begin
-            carry_in_out <= 0; //TODO: why we need to reset carry here?
+            //~ carry_in_out <= 0; //TODO: why we need to reset carry here?
             result <= preinit_result;
         end
         else
@@ -147,6 +147,7 @@ module loopOverAllNibbles_test;
         result = 0;
         ctrl = 0;
         ctrl.cmd = cmd;
+        carry_in_out = 0;
 
         loop_perm_to_count = 0;
 
