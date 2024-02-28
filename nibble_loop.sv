@@ -5,7 +5,8 @@ module loopOverAllNibbles
         //TODO: rename:
         input wire loop_perm_to_count, // otherwise - reset
         input wire[2:0] loop_nibbles_number,
-        ref wire AluCtrl ctrl,
+        input wire AluCtrl ctrl,
+        ref logic carry_in_out,
         input wire check_if_result_0xF, // for A==B comparison
         input wire word2_is_signed_and_negative, // useful for SUB on signed values shorter than 8 nibbles
         input wire[7:0][3:0] word1, //TODO: remove in favor to preinit_result value?
@@ -74,7 +75,7 @@ module loopOverAllNibbles
 
     wire AluArgs alu_args;
     wire AluRet alu_ret;
-    assign alu_args.ctrl.ctrl.carry_in = ctrl.ctrl.carry_in;
+    assign alu_args.ctrl.ctrl.carry_in = carry_in_out;
     assign alu_args.ctrl.ctrl.b_inv = invert_curr_nibble;
     assign alu_args.ctrl.ctrl.carry_disable = ctrl.ctrl.carry_disable;
     assign alu_args.ctrl.ctrl.cmd = ctrl.ctrl.cmd;
@@ -90,7 +91,7 @@ module loopOverAllNibbles
     always_ff @(posedge clk) begin
         if(~loop_perm_to_count)
         begin
-            ctrl.ctrl.carry_in <= 0;
+            carry_in_out <= 0; //TODO: why we need to reset carry here?
             result <= preinit_result;
         end
         else
@@ -99,9 +100,9 @@ module loopOverAllNibbles
                 result[counter] <= alu_ret.res;
 
                 if(~check_if_result_0xF)
-                    ctrl.ctrl.carry_in <= result_carry;
+                    carry_in_out <= result_carry;
                 else
-                    ctrl.ctrl.carry_in <= is_result_0xF;
+                    carry_in_out <= is_result_0xF;
             end
     end
 
@@ -114,6 +115,7 @@ module loopOverAllNibbles_test;
     logic loop_perm_to_count;
     logic[2:0] loop_nibbles_number;
     AluCtrl ctrl;
+    logic carry_in_out;
     logic check_if_result_0xF;
     logic word2_is_signed_and_negative;
     logic[31:0] word1;
@@ -131,8 +133,8 @@ module loopOverAllNibbles_test;
             input[31:0] w2
         );
 
-        //~ $monitor("clk=%b perm=%b reverse=%b idx=%h ctrl=%b b_inv=%b d1=%h d2=%h alu_ret=%h result=%h process_done=%b result_carry=%b ctrl.ctrl.carry_in=%b was_last_nibble=%b busy=%b",
-            //~ clk, l.loop_perm_to_count, l.reverse_direction, l.curr_nibble_idx, l.alu_args.ctrl, l.alu_args.ctrl.ctrl.b_inv, l.alu_args.d1, l.alu_args.d2, l.alu_ret.res, result, l.process_done, l.result_carry, ctrl.ctrl.carry_in, l.was_last_nibble, busy);
+        //~ $monitor("clk=%b perm=%b reverse=%b idx=%h ctrl=%b b_inv=%b d1=%h d2=%h alu_ret=%h result=%h process_done=%b result_carry=%b carry_in_out=%b was_last_nibble=%b busy=%b",
+            //~ clk, l.loop_perm_to_count, l.reverse_direction, l.curr_nibble_idx, l.alu_args.ctrl, l.alu_args.ctrl.ctrl.b_inv, l.alu_args.d1, l.alu_args.d2, l.alu_ret.res, result, l.process_done, l.result_carry, l.carry_in_out, l.was_last_nibble, busy);
 
         //~ $display("cycle started");
 
@@ -233,14 +235,14 @@ module loopOverAllNibbles_test;
         // equality check operation
         check_if_result_0xF = 1;
         loop_one_word(XNOR, 'h_1234_1234, 'h_1234_1234);
-        assert(ctrl.ctrl.carry_in); else $error("result=%h", result);
+        assert(carry_in_out); else $error("result=%h", result);
 
         // failed equality check operation
         loop_one_word(XNOR, 'h_2234_1234, 'h_1234_1234);
-        assert(~ctrl.ctrl.carry_in); else $error("result=%h", result);
+        assert(~carry_in_out); else $error("result=%h", result);
 
         // failed equality check operation (short loop)
         loop_one_word(XNOR, 'h_1234_1134, 'h_1234_1234);
-        assert(~ctrl.ctrl.carry_in); else $error("result=%h", result);
+        assert(~carry_in_out); else $error("result=%h", result);
     end
 endmodule
