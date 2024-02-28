@@ -6,7 +6,9 @@ typedef enum logic[3:0] {
     INCR_PC_PRELOAD, // Need to preload ALU before INCR_PC_CALC_POST will be called
     INCR_PC_STORE, // Store incremented PC value from ALU accumulator register
     INSTR_PROCESS, // Calls ALU if need
-    INSTR_BRANCH, // Processing instruction which implies PC changing
+    INSTR_BRANCH, // Processing instruction which implies (unconditional?) PC changing
+    BRANCH_PC_CALC,
+    BRANCH_PC_PRELOAD,
     READ_MEMORY,
     WRITE_MEMORY,
     ERROR
@@ -114,10 +116,7 @@ module control #(parameter START_ADDR = 0)
         alu_ctrl = ctrl;
 
         need_alu = (aluMode != DISABLED);
-        assign check_if_result_0xF = (
-            aluMode == BITS_32_COMPARE ||
-            aluMode == DISABLED // used as flag for keep carry value
-        );
+        assign check_if_result_0xF = (aluMode == BITS_32_COMPARE);
 
         unique case(aluMode)
             DISABLED: begin end
@@ -193,13 +192,15 @@ module control #(parameter START_ADDR = 0)
                 unique case(opCode)
                     OP_IMM, LUI, JAL, JALR: nextState = INSTR_FETCH;
                     AUIPC: nextState = INCR_PC_PRELOAD;
-                    BRANCH: nextState = INCR_PC_PRELOAD;
+                    BRANCH: nextState = comparison_result ? BRANCH_PC_PRELOAD : INCR_PC_PRELOAD;
                     LOAD: nextState = READ_MEMORY;
                     STORE: nextState = WRITE_MEMORY;
                     default: nextState = ERROR;
                 endcase
             end
             INSTR_BRANCH: nextState = INSTR_FETCH;
+            BRANCH_PC_PRELOAD: nextState = BRANCH_PC_CALC;
+            BRANCH_PC_CALC: nextState = INCR_PC_STORE;
             READ_MEMORY: nextState = INSTR_FETCH;
             WRITE_MEMORY: nextState = INSTR_FETCH;
             default: nextState = ERROR;
@@ -208,6 +209,7 @@ module control #(parameter START_ADDR = 0)
     // TODO: move to FSM always_comb block?
     always_comb
         unique case(nextState)
+            BRANCH_PC_CALC,
             INCR_PC_CALC,
             INCR_PC_CALC_POST:
                 alu_preinit_result = pc;
@@ -260,22 +262,22 @@ module control #(parameter START_ADDR = 0)
                 prepareMemRead(pc);
             end
 
+            BRANCH_PC_PRELOAD,
             INCR_PC_PRELOAD: disableAlu();
 
             INCR_PC_CALC,
             INCR_PC_CALC_POST:
-            begin
-                if(opCode == BRANCH && comparison_result) // conditional jump?
-                    setAluArgs(
-                        BITS_16, ADD, SIGNED, pc,
-                        { 16'b0, decoded.immediate_valueB }
-                    );
-                else
-                    setAluArgs(
-                        INCREMENT, ADD, UNSIGNED, pc,
-                        4 // PC increment value
-                    );
-            end
+                setAluArgs(
+                    INCREMENT, ADD, UNSIGNED, pc,
+                    4 // PC increment value
+                );
+
+            // conditional jump
+            BRANCH_PC_CALC:
+                setAluArgs(
+                    BITS_16, ADD, SIGNED, pc,
+                    { 16'b0, decoded.immediate_valueB }
+                );
 
             INCR_PC_STORE: disableAlu();
 
@@ -389,6 +391,8 @@ module control #(parameter START_ADDR = 0)
             INSTR_FETCH: instr <= bus_from_mem_32;
             INCR_PC_PRELOAD,
             INCR_PC_CALC,
+            BRANCH_PC_PRELOAD,
+            BRANCH_PC_CALC,
             INCR_PC_CALC_POST: begin end
             INCR_PC_STORE:
             begin
@@ -402,7 +406,8 @@ module control #(parameter START_ADDR = 0)
                 // Short cycle, like as for LUI instruction
                 if(
                     nextState == INSTR_FETCH ||
-                    nextState == INCR_PC_PRELOAD
+                    nextState == INCR_PC_PRELOAD ||
+                    nextState == BRANCH_PC_PRELOAD
                 )
                     register_file[instr.rd] <= (opCode != LUI) ? alu_result : { decoded.immediate_value20, 12'b0 };
             end
