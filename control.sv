@@ -175,7 +175,7 @@ module control #(parameter START_ADDR = 0)
     // Increment PC before executing instruction?
     wire pre_incr_pc = !(opCode == AUIPC || opCode == BRANCH);
 
-    wire comparison_result = alu_ctrl.ctrl.carry_in;
+    wire comparison_result = carry_in_out;
 
     always_comb
         unique case(currState)
@@ -190,7 +190,7 @@ module control #(parameter START_ADDR = 0)
                 unique case(opCode)
                     OP_IMM, LUI, JAL, JALR: nextState = INSTR_FETCH;
                     AUIPC: nextState = INCR_PC_PRELOAD;
-                    BRANCH: nextState = comparison_result ? INSTR_BRANCH : INCR_PC_PRELOAD;
+                    BRANCH: nextState = INCR_PC_PRELOAD;
                     LOAD: nextState = READ_MEMORY;
                     STORE: nextState = WRITE_MEMORY;
                     default: nextState = ERROR;
@@ -262,11 +262,16 @@ module control #(parameter START_ADDR = 0)
             INCR_PC_CALC,
             INCR_PC_CALC_POST:
             begin
-                setAluArgs(
-                    INCREMENT, ADD, UNSIGNED,
-                    pc,
-                    4 // PC increment value
-                );
+                if(opCode == BRANCH && comparison_result) // conditional jump?
+                    setAluArgs(
+                        BITS_12, ADD, SIGNED, pc,
+                        { 19'b0, decoded.immediate_value12, 1'b0 } // B-immediate value
+                    );
+                else
+                    setAluArgs(
+                        INCREMENT, ADD, UNSIGNED, pc,
+                        4 // PC increment value
+                    );
             end
 
             INCR_PC_STORE: disableAlu();
@@ -353,13 +358,6 @@ module control #(parameter START_ADDR = 0)
                     and to allow auxiliary information to be stored in
                     function pointers.
                     */
-
-                BRANCH:
-                    setAluArgs(
-                        BITS_12, ADD, SIGNED,
-                        pc,
-                        { 19'b0, decoded.immediate_value12, 1'b0 }
-                    );
 
                 default: disableAlu();
             endcase
