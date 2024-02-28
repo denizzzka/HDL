@@ -74,6 +74,7 @@ module control #(parameter START_ADDR = 0)
 
     logic[2:0] loop_nibbles_number;
     AluCtrl alu_ctrl;
+    wire check_if_result_0xF;
     logic word2_is_signed_and_negative;
     logic[31:0] alu_w1;
     logic[31:0] alu_w2;
