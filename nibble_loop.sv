@@ -56,7 +56,7 @@ module loopOverAllNibbles
         if(overflow)
             process_done = 1;
         else
-            if(invert_curr_nibble) // loop over negative signed must run over whole word to msb
+            if(word2_is_signed_and_negative) // loop over negative signed must run over whole word to msb
                 process_done = 0;
             else
                 process_done = was_last_nibble && ~result_carry;
