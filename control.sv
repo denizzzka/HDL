@@ -221,7 +221,7 @@ module control #(parameter START_ADDR = 0)
                 else
                     unique case(opCode)
                         JAL: alu_preinit_result = pc;
-                        JALR: alu_preinit_result = register_file[instr.rs1]; //TODO: can be =0 ?
+                        JALR: alu_preinit_result = register_file[instr.rs1];
                         default: alu_preinit_result = 0;
                     endcase
             end
