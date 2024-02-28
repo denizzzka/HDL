@@ -6,6 +6,7 @@ module loopOverAllNibbles
         input wire loop_perm_to_count, // otherwise - reset
         input wire[2:0] loop_nibbles_number,
         ref wire AluCtrl ctrl,
+        input wire check_if_result_0xF, // for A==B comparison
         input wire word2_is_signed_and_negative, // useful for SUB on signed values shorter than 8 nibbles
         input wire[7:0][3:0] word1, //TODO: remove in favor to preinit_result value?
         input wire[7:0][3:0] word2,
@@ -23,6 +24,9 @@ module loopOverAllNibbles
 
     //TODO: move overflow bit to outside to share this flag with another module?
     wire overflow = counter[3];
+
+    wire is_result_0xF;
+    wire result_0xF_check_failed = check_if_result_0xF && ~is_result_0xF;
 
     // Last nibble without considering possible carry processing
     wire last_nibble =
@@ -53,7 +57,7 @@ module loopOverAllNibbles
     logic process_done;
 
     always_comb
-        if(overflow)
+        if(overflow || result_0xF_check_failed)
             process_done = 1;
         else
             if(word2_is_signed_and_negative) // loop over negative signed must run over whole word to msb
@@ -79,6 +83,7 @@ module loopOverAllNibbles
     assign alu_args.d2 = word2[curr_nibble_idx];
 
     alu a(.args(alu_args), .ret(alu_ret));
+    check_if_0xF chk_0xf(.in(alu_ret.res), .ret(is_result_0xF));
 
     wire result_carry = reverse_direction ? alu_args.d2[0] : alu_ret.carry_out;
 
@@ -92,7 +97,11 @@ module loopOverAllNibbles
             if(busy)
             begin
                 result[counter] <= alu_ret.res;
-                ctrl.ctrl.carry_in <= result_carry;
+
+                if(~check_if_result_0xF)
+                    ctrl.ctrl.carry_in <= result_carry;
+                else
+                    ctrl.ctrl.carry_in <= is_result_0xF;
             end
     end
 
@@ -105,6 +114,7 @@ module loopOverAllNibbles_test;
     logic loop_perm_to_count;
     logic[2:0] loop_nibbles_number;
     AluCtrl ctrl;
+    logic check_if_result_0xF;
     logic word2_is_signed_and_negative;
     logic[31:0] word1;
     logic[31:0] word2;
@@ -121,8 +131,8 @@ module loopOverAllNibbles_test;
             input[31:0] w2
         );
 
-        //~ $monitor("clk=%b perm=%b reverse=%b idx=%h ctrl=%b b_inv=%b d1=%h d2=%h alu_ret=%h result=%h proc_not_all=%b result_carry=%b was_last=%b busy=%b",
-            //~ clk, l.loop_perm_to_count, l.reverse_direction, l.curr_nibble_idx, l.alu_args.ctrl, l.alu_args.ctrl.ctrl.b_inv, l.alu_args.d1, l.alu_args.d2, l.alu_ret.res, result, ~l.process_done, l.result_carry, l.was_last_nibble, busy);
+        //~ $monitor("clk=%b perm=%b reverse=%b idx=%h ctrl=%b b_inv=%b d1=%h d2=%h alu_ret=%h result=%h process_done=%b result_carry=%b ctrl.ctrl.carry_in=%b was_last_nibble=%b busy=%b",
+            //~ clk, l.loop_perm_to_count, l.reverse_direction, l.curr_nibble_idx, l.alu_args.ctrl, l.alu_args.ctrl.ctrl.b_inv, l.alu_args.d1, l.alu_args.d2, l.alu_ret.res, result, l.process_done, l.result_carry, ctrl.ctrl.carry_in, l.was_last_nibble, busy);
 
         //~ $display("cycle started");
 
@@ -167,6 +177,7 @@ module loopOverAllNibbles_test;
         //~ $dumpfile("loopOverAllNibbles_test.vcd");
         //~ $dumpvars(0, loopOverAllNibbles_test);
 
+        check_if_result_0xF = 0;
         preinit_result = 32'h_ff0004;
         loop_nibbles_number = 'b000;
 
@@ -218,5 +229,18 @@ module loopOverAllNibbles_test;
 
         loop_one_word(COMP, 'h_1234_1234, 'h_1234_1234); // A-B-1 operation
         assert(result == 'h_ffff_ffff); else $error("result=%h", result);
+
+        // equality check operation
+        check_if_result_0xF = 1;
+        loop_one_word(XNOR, 'h_1234_1234, 'h_1234_1234);
+        assert(ctrl.ctrl.carry_in); else $error("result=%h", result);
+
+        // failed equality check operation
+        loop_one_word(XNOR, 'h_2234_1234, 'h_1234_1234);
+        assert(~ctrl.ctrl.carry_in); else $error("result=%h", result);
+
+        // failed equality check operation (short loop)
+        loop_one_word(XNOR, 'h_1234_1134, 'h_1234_1234);
+        assert(~ctrl.ctrl.carry_in); else $error("result=%h", result);
     end
 endmodule
