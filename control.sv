@@ -74,7 +74,7 @@ module control #(parameter START_ADDR = 0)
 
     logic[2:0] loop_nibbles_number;
     AluCtrl alu_ctrl;
-    wire check_if_result_0xF;
+    logic check_if_result_0xF;
     logic word2_is_signed_and_negative;
     logic[31:0] alu_w1;
     logic[31:0] alu_w2;
@@ -88,7 +88,8 @@ module control #(parameter START_ADDR = 0)
         BITS_12,
         BITS_16,
         BITS_24,
-        BITS_32
+        BITS_32,
+        BITS_32_COMPARE // enables check_if_result_0xF
     } AluMode;
 
     typedef enum logic {
@@ -109,8 +110,10 @@ module control #(parameter START_ADDR = 0)
 
         alu_w1 = word1;
         alu_w2 = word2;
+        alu_ctrl = ctrl;
 
         need_alu = (aluMode != DISABLED);
+        assign check_if_result_0xF = (aluMode == BITS_32_COMPARE);
 
         unique case(aluMode)
             DISABLED: begin end
@@ -119,7 +122,8 @@ module control #(parameter START_ADDR = 0)
             BITS_12: loop_nibbles_number = 2;
             BITS_16: loop_nibbles_number = 3;
             BITS_24: loop_nibbles_number = 5;
-            BITS_32: loop_nibbles_number = 7;
+            BITS_32,
+            BITS_32_COMPARE: loop_nibbles_number = 7;
         endcase
 
         // Immediate values always signed
@@ -132,7 +136,8 @@ module control #(parameter START_ADDR = 0)
             BITS_12: msb = word2[11];
             BITS_16: msb = word2[15];
             BITS_24: msb = word2[23];
-            BITS_32: msb = word2[31];
+            BITS_32,
+            BITS_32_COMPARE: msb = word2[31];
             default: msb = 'x;
         endcase
 
@@ -169,6 +174,8 @@ module control #(parameter START_ADDR = 0)
     // Increment PC before executing instruction?
     wire pre_incr_pc = !(opCode == AUIPC || opCode == BRANCH);
 
+    wire comparison_result = alu_ctrl.ctrl.carry_in;
+
     always_comb
         unique case(currState)
             RESET: nextState = INSTR_FETCH;
@@ -181,8 +188,8 @@ module control #(parameter START_ADDR = 0)
             begin
                 unique case(opCode)
                     OP_IMM, LUI, JAL, JALR: nextState = INSTR_FETCH;
-                    AUIPC,
-                    BRANCH: nextState = INCR_PC_PRELOAD;
+                    AUIPC: nextState = INCR_PC_PRELOAD;
+                    BRANCH: nextState = comparison_result ? INSTR_BRANCH : INCR_PC_PRELOAD;
                     LOAD: nextState = READ_MEMORY;
                     STORE: nextState = WRITE_MEMORY;
                     default: nextState = ERROR;
@@ -208,8 +215,8 @@ module control #(parameter START_ADDR = 0)
                 else
                     unique case(opCode)
                         JAL: alu_preinit_result = pc;
-                        JALR,
-                        BRANCH: alu_preinit_result = register_file[instr.rs1];
+                        JALR: alu_preinit_result = register_file[instr.rs1]; //TODO: can be =0 ?
+                        BRANCH: alu_preinit_result = 0; //TODO: remove
                         default: alu_preinit_result = 0;
                     endcase
             end
@@ -238,8 +245,8 @@ module control #(parameter START_ADDR = 0)
         release bus_to_mem_32;
     endtask
 
-    wire rs1 = register_file[instr.rs1];
-    wire rs2 = register_file[instr.rs2];
+    wire[31:0] rs1 = register_file[instr.rs1];
+    wire[31:0] rs2 = register_file[instr.rs2];
 
     always_comb
         unique case(currState)
@@ -280,10 +287,12 @@ module control #(parameter START_ADDR = 0)
                     );
 
                 BRANCH:
+                begin
                     setAluArgs(
-                        BITS_32, COMP, UNSIGNED,
+                        BITS_32_COMPARE, XNOR, UNSIGNED,
                         rs1, rs2
                     );
+                end
 
                 LOAD: begin
                     unique case(decoded.width)
@@ -343,6 +352,13 @@ module control #(parameter START_ADDR = 0)
                     and to allow auxiliary information to be stored in
                     function pointers.
                     */
+
+                BRANCH:
+                    setAluArgs(
+                        BITS_12, ADD, SIGNED,
+                        pc,
+                        { 19'b0, decoded.immediate_value12, 1'b0 }
+                    );
 
                 default: disableAlu();
             endcase

@@ -92,6 +92,7 @@ module instr_stencil
             OP_IMM,
             JALR: decoded.immediate_value12 = { instr.funct7, instr.rs2 };
             STORE: decoded.immediate_value12 = { instr.funct7, instr.rd };
+            BRANCH: decoded.immediate_value12 = { instr.funct7[6], instr.rd[4], instr.funct7[5:0], instr.rd[4:1] }; //TODO: brrr!
             default: decoded.immediate_value12 = 'h_ded; /* FIXME: add handling for unknown opcodes */
         endcase
 

@@ -68,7 +68,7 @@ module control_test_bench;
 
             //~ $monitor("Test #%0d clk_count=%0d clk=%b state=%s next=%s opCode=%s prePC=%b pc=%h instr=%h nnumber=%h nibble=%h alu_result=%h", i, clk_count, c.clk, c.currState.name, c.nextState.name, c.opCode.name, c.pre_incr_pc, c.pc, c.instr, c.loop_nibbles_number, c.l.curr_nibble_idx, c.alu_result);
             //~ $monitor("Test #%0d state=%s next=%s opCode=%s prePC=%b pc=%h instr=%h nnumber=%h nibble=%h alu_result=%h alu_w2=%h", i, c.currState.name, c.nextState.name, c.opCode.name, c.pre_incr_pc, c.pc, c.instr, c.loop_nibbles_number, c.l.curr_nibble_idx, c.alu_result, c.alu_w2);
-            $monitor("Test #%0d state=%s next=%s opCode=%s prePC=%b pc=%h instr=%h nnumber=%h alu_result=%h alu_w2=%h", i, c.currState.name, c.nextState.name, c.opCode.name, c.pre_incr_pc, c.pc, c.instr, c.loop_nibbles_number, c.alu_result, c.alu_w2);
+            $monitor("Test #%0d state=%s next=%s opCode=%s prePC=%b pc=%h instr=%h nnumber=%h nibble=%h alu_result=%h carry_ret=%b check_0xF=%b alu_w1=%h alu_w2=%h alu_ctrl=%b", i, c.currState.name, c.nextState.name, c.opCode.name, c.pre_incr_pc, c.pc, c.instr, c.loop_nibbles_number, c.l.curr_nibble_idx, c.alu_result, c.alu_ctrl.ctrl.carry_in, c.check_if_result_0xF, c.alu_w1, c.alu_w2, c.alu_ctrl);
 
             do begin
                 assert(c.currState != ERROR); else $error("currState=%s", c.currState.name);
