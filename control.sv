@@ -182,7 +182,7 @@ module control #(parameter START_ADDR = 0)
     always_comb
         unique case(currState)
             RESET: nextState = INSTR_FETCH;
-            INSTR_FETCH: nextState = INCR_PC_CALC;
+            INSTR_FETCH: nextState = INCR_PC_CALC; // special case, see module CtrlStateFSM, TODO: remove this line?
             INCR_PC_CALC: nextState = INCR_PC_STORE;
             INCR_PC_PRELOAD: nextState = INCR_PC_CALC_POST;
             INCR_PC_CALC_POST: nextState = INCR_PC_STORE;
@@ -190,7 +190,7 @@ module control #(parameter START_ADDR = 0)
             INSTR_PROCESS:
             begin
                 unique case(opCode)
-                    OP_IMM, LUI, JAL, JALR: nextState = INSTR_FETCH;
+                    OP, OP_IMM, LUI, JAL, JALR: nextState = INSTR_FETCH;
                     AUIPC: nextState = INCR_PC_PRELOAD;
                     BRANCH: nextState = comparison_result ? BRANCH_PC_PRELOAD : INCR_PC_PRELOAD;
                     LOAD: nextState = READ_MEMORY;
@@ -287,6 +287,12 @@ module control #(parameter START_ADDR = 0)
                         BITS_12, ADD, SIGNED,
                         register_file[instr.rs1],
                         32'(decoded.immediate_value12)
+                    );
+
+                OP:
+                    setAluArgs(
+                        BITS_32, ADD, UNSIGNED,
+                        rs1, rs2
                     );
 
                 AUIPC:

@@ -33,7 +33,8 @@ module control_test_bench;
             '{instr: 'h_ff9ff2ef, ret_must_be: start_addr + 4, check_memory: 0},    // jal x5, -8
             '{instr: 'h_ff8502e7, ret_must_be: start_addr + 4, check_memory: 0},    // jalr x5, -8(x10)
             '{instr: 'h_fe318ce3, ret_must_be: start_addr + 4, check_memory: 0},    // beq x3, x3, -8
-            '{instr: 'h_fe418ce3, ret_must_be: start_addr + 4, check_memory: 0}     // beq x3, x4, -8
+            '{instr: 'h_fe418ce3, ret_must_be: start_addr + 4, check_memory: 0},    // beq x3, x4, -8
+            '{instr: 'h_004182b3, ret_must_be: 'h_210, check_memory: 0}     // add x5, x3, x4
         };
 
     logic[7:0] clk_count;
