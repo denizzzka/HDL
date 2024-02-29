@@ -151,7 +151,9 @@ module control #(parameter START_ADDR = 0)
     function void disableAlu;
         AluCtrl ctrl;
         ctrl = 5'bxxxxx;
-        ctrl.ctrl.carry_in = (opCode == OP) ? i_s.sub_sra_modifier : 0; // Need preinit carry_in=1 for SUB operations
+
+        // Need preinit carry_in=1 for SUB operations
+        ctrl.ctrl.carry_in = (opCode == OP) ? i_s.sub_sra_modifier : 0;
 
         setAluArgs(DISABLED, ctrl, UNDEF, 'x, 'x);
     endfunction
