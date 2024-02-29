@@ -35,7 +35,8 @@ module control_test_bench;
             '{instr: 'h_fe318ce3, ret_must_be: start_addr + 4, check_memory: 0},    // beq x3, x3, -8
             '{instr: 'h_fe418ce3, ret_must_be: start_addr + 4, check_memory: 0},    // beq x3, x4, -8
             '{instr: 'h_004182b3, ret_must_be: 'h_210, check_memory: 0},    // add x5, x3, x4
-            '{instr: 'h_0083f2b3, ret_must_be: 'b_0010, check_memory: 0}    // and x5, x7, x8
+            '{instr: 'h_0083f2b3, ret_must_be: 'b_0010, check_memory: 0},   // and x5, x7, x8
+            '{instr: 'h_0083e2b3, ret_must_be: 'b_1110, check_memory: 0}   // or x5, x7, x8
         };
 
     logic[7:0] clk_count;
