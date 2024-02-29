@@ -291,7 +291,7 @@ module control #(parameter START_ADDR = 0)
 
                 OP:
                     setAluArgs(
-                        BITS_32, ADD, UNSIGNED,
+                        BITS_32, decodedAluCmd.ctrl, UNSIGNED,
                         rs1, rs2
                     );
 

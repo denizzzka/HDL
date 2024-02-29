@@ -34,7 +34,8 @@ module control_test_bench;
             '{instr: 'h_ff8502e7, ret_must_be: start_addr + 4, check_memory: 0},    // jalr x5, -8(x10)
             '{instr: 'h_fe318ce3, ret_must_be: start_addr + 4, check_memory: 0},    // beq x3, x3, -8
             '{instr: 'h_fe418ce3, ret_must_be: start_addr + 4, check_memory: 0},    // beq x3, x4, -8
-            '{instr: 'h_004182b3, ret_must_be: 'h_210, check_memory: 0}     // add x5, x3, x4
+            '{instr: 'h_004182b3, ret_must_be: 'h_210, check_memory: 0},    // add x5, x3, x4
+            '{instr: 'h_0083f2b3, ret_must_be: 'b_0010, check_memory: 0}    // and x5, x7, x8
         };
 
     logic[7:0] clk_count;
@@ -65,6 +66,8 @@ module control_test_bench;
             c.register_file[3] = 'h_100;
             c.register_file[4] = 'h_110;
             c.register_file[6] = 'h_cafe_babe;
+            c.register_file[7] = 'b_1010;
+            c.register_file[8] = 'b_0110;
             c.register_file[10] = start_addr;
 
             //~ $monitor("Test #%0d clk_count=%0d clk=%b state=%s next=%s opCode=%s prePC=%b pc=%h instr=%h nnumber=%h nibble=%h alu_result=%h", i, clk_count, c.clk, c.currState.name, c.nextState.name, c.opCode.name, c.pre_incr_pc, c.pc, c.instr, c.loop_nibbles_number, c.l.curr_nibble_idx, c.alu_result);
