@@ -33,7 +33,7 @@ typedef struct packed
 
 class en;
     typedef enum logic[2:0] {
-        ADD  =3'b000,
+        ADD_or_SUB=3'b000,
         SLL  =3'b001,
         SLT  =3'b010,
         SLTU =3'b011,
@@ -73,14 +73,16 @@ module instr_stencil
     assign decoded.immediate_value20 = instr[31:12];
     assign decoded.immediate_jump = { instr[31], instr[31], instr[31], instr[31], instr[19:12],  instr[20], instr[30:21], 1'b0 };
 
+    wire sub_sra_modifier = instr.funct7[5];
+
     always_comb
         unique case(en::RiscV_Spec_AluCmd'(instr.funct3))
-            en::ADD:  decodedAluCmd.ctrl = ADD;
+            en::ADD_or_SUB: decodedAluCmd.ctrl = sub_sra_modifier ? SUB : ADD;
             en::SLL:  decodedAluCmd.ctrl = ADD;
             en::SLT:  decodedAluCmd.ctrl = COMP;
             en::SLTU: decodedAluCmd.ctrl = COMP;
             en::XOR:  decodedAluCmd.ctrl = XOR;
-            en::SRLA: decodedAluCmd.ctrl = RSHFT;
+            en::SRLA: decodedAluCmd.ctrl = RSHFT; //FIXME: distinct between SRL and SRA
             en::OR:   decodedAluCmd.ctrl = OR;
             en::AND:  decodedAluCmd.ctrl = AND;
         endcase

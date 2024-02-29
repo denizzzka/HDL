@@ -149,7 +149,11 @@ module control #(parameter START_ADDR = 0)
     endfunction
 
     function void disableAlu;
-        setAluArgs(DISABLED, 5'bxxxxx, UNDEF, 'x, 'x);
+        AluCtrl ctrl;
+        ctrl = 5'bxxxxx;
+        ctrl.ctrl.carry_in = (opCode == OP) ? i_s.sub_sra_modifier : 0; // Need preinit carry_in=1 for SUB operations
+
+        setAluArgs(DISABLED, ctrl, UNDEF, 'x, 'x);
     endfunction
 
     loopOverAllNibbles l(
