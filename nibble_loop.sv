@@ -91,7 +91,7 @@ module loopOverAllNibbles
     always_ff @(posedge clk) begin
         if(~loop_perm_to_count)
         begin
-            carry_in_out <= 0;
+            carry_in_out <= ctrl.ctrl.carry_in;
             result <= preinit_result;
         end
         else
@@ -232,6 +232,9 @@ module loopOverAllNibbles_test;
 
         loop_one_word(COMP, 'h_1234_1234, 'h_1234_1234); // A-B-1 operation
         assert(result == 'h_ffff_ffff); else $error("result=%h", result);
+
+        loop_one_word(SUB, 'h_0000_1000, 'h_0000_0500);
+        assert(result == 'h_0000_0b00); else $error("result=%h", result);
 
         // equality check operation
         check_if_result_0xF = 1;
