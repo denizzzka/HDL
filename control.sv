@@ -6,6 +6,7 @@ typedef enum logic[3:0] {
     INCR_PC_PRELOAD, // Need to preload ALU before INCR_PC_CALC_POST will be called
     INCR_PC_STORE, // Store incremented PC value from ALU accumulator register
     INSTR_PROCESS, // Calls ALU if need
+    PREPARE_SHIFT, // Prepare next shift stage, TODO: rename to PREP_NEXT_SHIFT
     INSTR_BRANCH, // Processing instruction which implies (unconditional?) PC changing
     BRANCH_PC_CALC,
     BRANCH_PC_PRELOAD,
@@ -19,6 +20,7 @@ module CtrlStateFSM
         input wire clk,
         input wire need_alu, // ...loop before next state
         input wire alu_busy,
+        //~ input wire shift_in_progress,
         input wire ControlState nextState,
         input wire pre_incr_pc,
         output wire alu_perm_to_count,
@@ -65,6 +67,7 @@ module control #(parameter START_ADDR = 0)
     logic need_alu;
     wire alu_busy;
     wire alu_perm_to_count;
+    wire shift_loop_busy;
     CtrlStateFSM ctrlStateFSM(.*);
 
     Instruction instr;
@@ -158,6 +161,8 @@ module control #(parameter START_ADDR = 0)
         setAluArgs(DISABLED, ctrl, UNDEF, 'x, 'x);
     endfunction
 
+    wire enable_preinit_only = (currState == INCR_PC_STORE);
+
     loopOverAllNibbles l(
         .clk,
         .loop_perm_to_count(alu_perm_to_count),
@@ -168,6 +173,19 @@ module control #(parameter START_ADDR = 0)
         .result(alu_result),
         .busy(alu_busy),
         .*
+    );
+
+    //TODO: start value can be commutated for free at any state except INSTR_PROCESS 
+    wire[4:0] shift_loop_start_val = (opCode == OP_IMM) ? 5'(decoded.immediate_value12) :  5'(rs2) /* OP */;
+    wire shift_reset = (currState == INCR_PC_STORE) && i_s.is_shift_operation;
+    wire shift_loop_step = (~alu_busy && currState == INSTR_PROCESS) || shift_reset;
+    //~ wire shift_in_progress = (currState == INSTR_PROCESS) && i_s.is_shift_operation && shift_loop_busy;
+
+    shift_loop sl(
+        .decrease_pulse(shift_loop_step),
+        .reset(shift_reset),
+        .start_val(shift_loop_start_val),
+        .busy(shift_loop_busy)
     );
 
     logic write_enable;
@@ -193,10 +211,27 @@ module control #(parameter START_ADDR = 0)
             INCR_PC_PRELOAD: nextState = INCR_PC_CALC_POST;
             INCR_PC_CALC_POST: nextState = INCR_PC_STORE;
             INCR_PC_STORE: nextState = pre_incr_pc ? ((opCode == JAL || opCode == JALR) ? INSTR_BRANCH : INSTR_PROCESS) : INSTR_FETCH;
+            //~ begin
+                //~ if(pre_incr_pc)
+                //~ begin
+                    //~ if(opCode == JAL || opCode == JALR)
+                        //~ nextState = INSTR_BRANCH;
+                    //~ else
+                    //~ begin
+                        //~ if((opCode == OP || opCode == OP_IMM) && i_s.is_shift_operation)
+                            //~ nextState = PREPARE_SHIFT;
+                        //~ else
+                            //~ nextState = INSTR_PROCESS;
+                    //~ end
+                //~ end
+                //~ else
+                    //~ nextState = INSTR_FETCH;
+            //~ end
             INSTR_PROCESS:
             begin
                 unique case(opCode)
-                    OP, OP_IMM, LUI, JAL, JALR: nextState = INSTR_FETCH;
+                    LUI, JAL, JALR: nextState = INSTR_FETCH;
+                    OP, OP_IMM: nextState = (i_s.is_shift_operation && shift_loop_busy) ? PREPARE_SHIFT : INSTR_FETCH;
                     AUIPC: nextState = INCR_PC_PRELOAD;
                     BRANCH: nextState = comparison_result ? BRANCH_PC_PRELOAD : INCR_PC_PRELOAD;
                     LOAD: nextState = READ_MEMORY;
@@ -207,9 +242,10 @@ module control #(parameter START_ADDR = 0)
             INSTR_BRANCH: nextState = INSTR_FETCH;
             BRANCH_PC_PRELOAD: nextState = BRANCH_PC_CALC;
             BRANCH_PC_CALC: nextState = INCR_PC_STORE;
+            PREPARE_SHIFT: nextState = INSTR_PROCESS; //shift_loop_busy ? INSTR_PROCESS : INSTR_FETCH;
             READ_MEMORY: nextState = INSTR_FETCH;
             WRITE_MEMORY: nextState = INSTR_FETCH;
-            default: nextState = ERROR;
+            default: nextState = ERROR; //TODO: remove
         endcase
 
     // TODO: move to FSM always_comb block?
@@ -228,6 +264,7 @@ module control #(parameter START_ADDR = 0)
                     unique case(opCode)
                         JAL: alu_preinit_result = pc;
                         JALR: alu_preinit_result = register_file[instr.rs1];
+                        OP_IMM, OP: alu_preinit_result = i_s.is_shift_operation ? rs1 : 0;
                         default: alu_preinit_result = 0;
                     endcase
             end
@@ -261,6 +298,10 @@ module control #(parameter START_ADDR = 0)
 
     always_comb
         unique case(currState)
+            RESET,
+            ERROR:
+                disableAlu();
+
             INSTR_FETCH:
             begin
                 disableAlu();
@@ -287,13 +328,27 @@ module control #(parameter START_ADDR = 0)
             INCR_PC_STORE: disableAlu();
 
             INSTR_PROCESS:
+            begin
             unique case(opCode)
                 OP_IMM:
-                    setAluArgs(
-                        BITS_12, ADD, SIGNED,
-                        register_file[instr.rs1],
-                        32'(decoded.immediate_value12)
-                    );
+                begin
+                    if(~i_s.is_shift_operation)
+                        setAluArgs(
+                            BITS_12, ADD, SIGNED,
+                            rs1,
+                            32'(decoded.immediate_value12)
+                        );
+                    else
+                    begin
+                        if(~shift_loop_busy) // zero shift
+                            disableAlu();
+                        else
+                            setAluArgs(
+                                BITS_32, ADD, UNSIGNED,
+                                rs1, rs1 //FIXME: left shift only implemented
+                            );
+                    end
+                end
 
                 OP:
                     setAluArgs(
@@ -351,6 +406,7 @@ module control #(parameter START_ADDR = 0)
                     disableAlu();
                 end
             endcase
+            end
 
             INSTR_BRANCH:
             unique case(opCode)
@@ -378,6 +434,8 @@ module control #(parameter START_ADDR = 0)
                 default: disableAlu();
             endcase
 
+            PREPARE_SHIFT: disableAlu();
+
             READ_MEMORY:
             begin
                 disableAlu();
@@ -388,11 +446,6 @@ module control #(parameter START_ADDR = 0)
             begin
                 disableAlu();
                 prepareMemWrite(alu_result, register_file[instr.rs2]);
-            end
-
-            default:
-            begin
-                disableAlu();
             end
         endcase
 
@@ -414,15 +467,17 @@ module control #(parameter START_ADDR = 0)
             end
             INSTR_PROCESS:
             begin
-                // Short cycle, like as for LUI instruction
+                // Short cycle, like as for LUI instruction // TODO: remove this condition?
                 if(
                     nextState == INSTR_FETCH ||
                     nextState == INCR_PC_PRELOAD ||
+                    nextState == PREPARE_SHIFT ||
                     nextState == BRANCH_PC_PRELOAD
                 )
                     register_file[instr.rd] <= (opCode != LUI) ? alu_result : { decoded.immediate_value20, 12'b0 };
             end
             INSTR_BRANCH: pc <= alu_result;
+            PREPARE_SHIFT: instr.rs1 <= instr.rd; // substitute rs1 address by rd in fetched instruction: trick to apply shifting to a previous shifts result, TODO: move to INSTR_PROCESS section
             READ_MEMORY: register_file[instr.rd] <= bus_from_mem_32;
             WRITE_MEMORY: begin end
             ERROR: begin end

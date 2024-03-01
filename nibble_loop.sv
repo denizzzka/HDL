@@ -11,6 +11,7 @@ module loopOverAllNibbles
         input wire word2_is_signed_and_negative, // useful for SUB on signed values shorter than 8 nibbles
         input wire[7:0][3:0] word1, //TODO: remove in favor to preinit_result value?
         input wire[7:0][3:0] word2,
+        input wire enable_preinit_only, // Hack for fast shifting to 0 bits
         input wire[31:0] preinit_result,
         output wire busy,
         output wire[7:0][3:0] result
@@ -89,7 +90,9 @@ module loopOverAllNibbles
     wire result_carry = reverse_direction ? alu_args.d2[0] : alu_ret.carry_out;
 
     always_ff @(posedge clk) begin
-        if(~loop_perm_to_count)
+        if(enable_preinit_only)
+            result <= preinit_result;
+        else if(~loop_perm_to_count)
         begin
             carry_in_out <= ctrl.ctrl.carry_in;
             result <= preinit_result;
@@ -121,6 +124,7 @@ module loopOverAllNibbles_test;
     logic[31:0] word1;
     logic[31:0] word2;
     logic[31:0] preinit_result;
+    logic enable_preinit;
     logic[31:0] result;
     wire busy;
 

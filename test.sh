@@ -6,6 +6,7 @@ sv_files=(
     alu.sv
     instr_decoder.sv
     nibble_loop.sv
+    shift_loop.sv
     ram.sv
     control.sv
 )
