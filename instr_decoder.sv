@@ -73,10 +73,11 @@ module instr_stencil
     assign decoded.immediate_value20 = instr[31:12];
     assign decoded.immediate_jump = { instr[31], instr[31], instr[31], instr[31], instr[19:12],  instr[20], instr[30:21], 1'b0 };
 
+    wire en::RiscV_Spec_AluCmd riscv_aluCmd = en::RiscV_Spec_AluCmd'(instr.funct3);
     wire sub_sra_modifier = instr.funct7[5];
 
     always_comb
-        unique case(en::RiscV_Spec_AluCmd'(instr.funct3))
+        unique case(riscv_aluCmd)
             en::ADD_or_SUB: decodedAluCmd.ctrl = sub_sra_modifier ? SUB : ADD;
             en::SLL:  decodedAluCmd.ctrl = ADD;
             en::SLT:  decodedAluCmd.ctrl = COMP;
@@ -88,6 +89,8 @@ module instr_stencil
         endcase
 
     assign decodedAluCmd.isUnsignedCompOrLeftShift = instr.funct3[0];
+
+    wire is_shift_operation = (riscv_aluCmd == en::SLL || riscv_aluCmd == en::SRLA);
 
     always_comb
         unique case(instr.opCode)
