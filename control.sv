@@ -333,16 +333,23 @@ module control #(parameter START_ADDR = 0)
                 end
 
                 OP:
+                begin
                     if(~i_s.is_shift_operation)
                         setAluArgs(
                             BITS_32, decodedAluCmd.ctrl, UNSIGNED,
                             rs1, rs2
                         );
                     else
-                        setAluArgs(
-                            BITS_32, ADD, UNSIGNED,
-                            rs1, rs1 //FIXME: left shift only implemented
-                        );
+                    begin
+                        if(~shift_loop_busy) // zero shift
+                            disableAlu();
+                        else
+                            setAluArgs(
+                                BITS_32, ADD, UNSIGNED,
+                                rs1, rs1 //FIXME: left shift only implemented
+                            );
+                    end
+                end
 
                 AUIPC:
                     setAluArgs(
