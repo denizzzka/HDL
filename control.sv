@@ -160,7 +160,7 @@ module control #(parameter START_ADDR = 0)
         setAluArgs(DISABLED, ctrl, UNDEF, 'x, 'x);
     endfunction
 
-    wire enable_preinit_only = (currState == INCR_PC_STORE);
+    wire enable_preinit_only = (currState == INCR_PC_STORE && i_s.is_shift_operation);
 
     loopOverAllNibbles l(
         .clk,
