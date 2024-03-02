@@ -42,7 +42,8 @@ module control_test_bench;
             '{instr: 'h_403202b3, ret_must_be: 'h_010, check_memory: 0},    // sub x5, x4, x3
             '{instr: 'h_00041293, ret_must_be: 'b_010110, check_memory: 0}, // slli x5, x8, 0
             '{instr: 'h_00241293, ret_must_be: 'b_1011000, check_memory: 0},    // slli x5, x8, 2
-            '{instr: 'h_00235293, ret_must_be: 'h_cafe_babe >> 2, check_memory: 0},    // srli x5, x6, 2
+            '{instr: 'h_00035293, ret_must_be: 'h_cafe_babe, check_memory: 0},  // srli x5, x6, 0
+            '{instr: 'h_00235293, ret_must_be: 'h_cafe_babe >> 2, check_memory: 0}, // srli x5, x6, 2
             '{instr: 'h_00b412b3, ret_must_be: 'b_010110, check_memory: 0}, // sll x5, x8, x11
             '{instr: 'h_009412b3, ret_must_be: 'b_1011000, check_memory: 0} // sll x5, x8, x9
         };
