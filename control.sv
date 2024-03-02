@@ -458,17 +458,12 @@ module control #(parameter START_ADDR = 0)
                 )
                 begin
                     if(~alu_busy)
-                    begin
                         register_file[instr.rd] <= (opCode != LUI) ? alu_result : { decoded.immediate_value20, 12'b0 };
-
-                        if(shift_loop_busy)
-                            instr.rs1 <= instr.rd;
-                    end
                 end
 
             end
             INSTR_BRANCH: pc <= alu_result;
-            PREP_NEXT_SHIFT: begin end
+            PREP_NEXT_SHIFT: instr.rs1 <= instr.rd;
             READ_MEMORY: register_file[instr.rd] <= bus_from_mem_32;
             WRITE_MEMORY: begin end
             ERROR: begin end
