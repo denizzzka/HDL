@@ -175,7 +175,7 @@ module control #(parameter START_ADDR = 0)
     );
 
     //TODO: start value can be commutated for free at any state except INSTR_PROCESS
-    wire[4:0] shift_loop_start_val = (opCode == OP_IMM) ? 5'(decoded.immediate_value12) :  5'(rs2) /* OP */;
+    wire[4:0] shift_loop_start_val = (opCode == OP_IMM) ? instr.rs2 :  5'(rs2) /* OP */; //TODO: store shift_counter[4:0] directly in instr.rs2 register
     wire shift_reset = (currState == INCR_PC_STORE) && i_s.is_shift_operation;
     wire shift_loop_step = (~alu_busy && currState == INSTR_PROCESS) || shift_reset;
 
@@ -333,10 +333,16 @@ module control #(parameter START_ADDR = 0)
                 end
 
                 OP:
-                    setAluArgs(
-                        BITS_32, decodedAluCmd.ctrl, UNSIGNED,
-                        rs1, rs2
-                    );
+                    if(~i_s.is_shift_operation)
+                        setAluArgs(
+                            BITS_32, decodedAluCmd.ctrl, UNSIGNED,
+                            rs1, rs2
+                        );
+                    else
+                        setAluArgs(
+                            BITS_32, ADD, UNSIGNED,
+                            rs1, rs1 //FIXME: left shift only implemented
+                        );
 
                 AUIPC:
                     setAluArgs(
