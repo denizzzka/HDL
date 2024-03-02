@@ -463,6 +463,10 @@ module control #(parameter START_ADDR = 0)
                     register_file[instr.rd] <= alu_result;
                 else
                     pc <= alu_result;
+
+                // places MSB for arithmetic shifts
+                if(i_s.is_shift_operation && i_s.sub_sra_modifier)
+                    carry_in_out <= rs1[31];
             end
             INSTR_PROCESS:
             begin
@@ -480,7 +484,13 @@ module control #(parameter START_ADDR = 0)
 
             end
             INSTR_BRANCH: pc <= alu_result;
-            PREP_NEXT_SHIFT: instr.rs1 <= instr.rd;
+            PREP_NEXT_SHIFT:
+            begin
+                instr.rs1 <= instr.rd;
+
+                // places MSB for arithmetic shifts (TODO: duplicates code from INCR_PC_STORE)
+                carry_in_out <= i_s.sub_sra_modifier && rs1[31];
+            end
             READ_MEMORY: register_file[instr.rd] <= bus_from_mem_32;
             WRITE_MEMORY: begin end
             ERROR: begin end

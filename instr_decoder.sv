@@ -83,7 +83,7 @@ module instr_stencil
             en::SLT:  decodedAluCmd.ctrl = COMP;
             en::SLTU: decodedAluCmd.ctrl = COMP;
             en::XOR:  decodedAluCmd.ctrl = XOR;
-            en::SRLA: decodedAluCmd.ctrl = RSHFT; //FIXME: distinct between SRL and SRA
+            en::SRLA: decodedAluCmd.ctrl = RSHFT; //FIXME: switch between SRL and SRA using sub_sra_modifier flag
             en::OR:   decodedAluCmd.ctrl = OR;
             en::AND:  decodedAluCmd.ctrl = AND;
         endcase
