@@ -11,7 +11,7 @@ module loopOverAllNibbles
         input wire word2_is_signed_and_negative, // useful for SUB on signed values shorter than 8 nibbles
         input wire[7:0][3:0] word1, //TODO: remove in favor to preinit_result value?
         input wire[7:0][3:0] word2,
-        input wire enable_preinit_only, // Hack for fast shifting to 0 bits
+        input wire enable_preinit_only, // Hack for fast zero bits shifting
         input wire[31:0] preinit_result,
         output wire busy,
         output wire[7:0][3:0] result

@@ -42,6 +42,7 @@ module control_test_bench;
             '{instr: 'h_403202b3, ret_must_be: 'h_010, check_memory: 0},    // sub x5, x4, x3
             '{instr: 'h_00041293, ret_must_be: 'b_010110, check_memory: 0}, // slli x5, x8, 0
             '{instr: 'h_00241293, ret_must_be: 'b_1011000, check_memory: 0},    // slli x5, x8, 2
+            '{instr: 'h_00235293, ret_must_be: 'h_cafe_babe >> 2, check_memory: 0},    // srli x5, x6, 2
             '{instr: 'h_00b412b3, ret_must_be: 'b_010110, check_memory: 0}, // sll x5, x8, x11
             '{instr: 'h_009412b3, ret_must_be: 'b_1011000, check_memory: 0} // sll x5, x8, x9
         };
@@ -83,7 +84,7 @@ module control_test_bench;
             //~ $monitor("Test #%0d clk_count=%0d clk=%b state=%s next=%s opCode=%s prePC=%b pc=%h instr=%h nnumber=%h nibble=%h alu_result=%h", i, clk_count, c.clk, c.currState.name, c.nextState.name, c.opCode.name, c.pre_incr_pc, c.pc, c.instr, c.loop_nibbles_number, c.l.curr_nibble_idx, c.alu_result);
             //~ $monitor("Test #%0d state=%s next=%s opCode=%s prePC=%b pc=%h instr=%h nnumber=%h nibble=%h alu_result=%h alu_w2=%h", i, c.currState.name, c.nextState.name, c.opCode.name, c.pre_incr_pc, c.pc, c.instr, c.loop_nibbles_number, c.l.curr_nibble_idx, c.alu_result, c.alu_w2);
             //~ $monitor("Test #%0d state=%s next=%s opCode=%s prePC=%b pc=%h instr=%h nnumber=%h nibble=%h alu_result=%h carry_ret=%b check_0xF=%b alu_w1=%h alu_w2=%h alu_ctrl=%b", i, c.currState.name, c.nextState.name, c.opCode.name, c.pre_incr_pc, c.pc, c.instr, c.loop_nibbles_number, c.l.curr_nibble_idx, c.alu_result, c.carry_in_out, c.check_if_result_0xF, c.alu_w1, c.alu_w2, c.alu_ctrl);
-            //~ $monitor("Test #%0d stt=%s nxt=%s op=%s cmd=%s ins=%h shift_cnt=%h nnum=%h nibble=%h shift_busy=%b shift_step=%b alu_busy=%b alu_res=%h carry=%b alu_w1(%h)=%h alu_w2=%h alu_ctrl=%b", i, c.currState.name, c.nextState.name, c.opCode.name, c.i_s.riscv_aluCmd.name, c.instr, c.sl.curr_val, c.loop_nibbles_number, c.l.curr_nibble_idx, c.shift_loop_busy, c.shift_loop_step, c.alu_busy, c.alu_result, c.carry_in_out, c.instr.rs1, c.alu_w1, c.alu_w2, c.alu_ctrl);
+            //~ $monitor("Test #%0d stt=%s nxt=%s op=%s cmd=%s ins=%h shift_cnt=%h nnum=%h nibble=%h shift_busy=%b shift_step=%b alu_busy=%b perm=%b alu_res=%h carry=%b alu_w1(%h)=%h alu_w2=%h alu_ctrl=%b", i, c.currState.name, c.nextState.name, c.opCode.name, c.i_s.riscv_aluCmd.name, c.instr, c.sl.curr_val, c.loop_nibbles_number, c.l.curr_nibble_idx, c.shift_loop_busy, c.shift_loop_step, c.alu_busy, c.alu_perm_to_count, c.alu_result, c.carry_in_out, c.instr.rs1, c.alu_w1, c.alu_w2, c.alu_ctrl);
 
             do begin
                 assert(c.currState != ERROR); else $error("currState=%s", c.currState.name);

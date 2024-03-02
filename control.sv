@@ -121,7 +121,7 @@ module control #(parameter START_ADDR = 0)
         assign check_if_result_0xF = (aluMode == BITS_32_COMPARE);
 
         unique case(aluMode)
-            DISABLED: begin end
+            DISABLED: loop_nibbles_number = 7; // 7 is for RSHFT preinit
             INCREMENT: loop_nibbles_number = 0;
             BITS_8: loop_nibbles_number = 1;
             BITS_12: loop_nibbles_number = 2;
@@ -154,12 +154,16 @@ module control #(parameter START_ADDR = 0)
         AluCtrl ctrl;
         ctrl = 5'bxxxxx;
 
-        // Need preinit carry_in=1 for SUB operations
-        ctrl.ctrl.carry_in = (opCode == OP) ? i_s.sub_sra_modifier : 0;
+        if(enable_preinit_only || currState == PREP_NEXT_SHIFT)
+            ctrl = i_s.decodedAluCmd.ctrl; // for RSHFT operation
+        else
+            // Need preinit carry_in=1 for SUB operations
+            ctrl.ctrl.carry_in = (opCode == OP) ? i_s.sub_sra_modifier : 0;
 
         setAluArgs(DISABLED, ctrl, UNDEF, 'x, 'x);
     endfunction
 
+    //TODO: rename to enable_preinit_only_for_shift
     wire enable_preinit_only = (currState == INCR_PC_STORE && i_s.is_shift_operation);
 
     loopOverAllNibbles l(
@@ -326,8 +330,8 @@ module control #(parameter START_ADDR = 0)
                             disableAlu();
                         else
                             setAluArgs(
-                                BITS_32, ADD, UNSIGNED,
-                                rs1, rs1 //FIXME: left shift only implemented
+                                BITS_32, decodedAluCmd.ctrl, UNSIGNED,
+                                rs1, rs1
                             );
                     end
                 end
