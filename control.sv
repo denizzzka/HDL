@@ -474,10 +474,19 @@ module control #(parameter START_ADDR = 0)
                     nextState == PREPARE_SHIFT ||
                     nextState == BRANCH_PC_PRELOAD
                 )
-                    register_file[instr.rd] <= (opCode != LUI) ? alu_result : { decoded.immediate_value20, 12'b0 };
+                begin
+                    if(~alu_busy)
+                    begin
+                        register_file[instr.rd] <= (opCode != LUI) ? alu_result : { decoded.immediate_value20, 12'b0 };
+
+                        if(shift_loop_busy)
+                            instr.rs1 <= instr.rd;
+                    end
+                end
+
             end
             INSTR_BRANCH: pc <= alu_result;
-            PREPARE_SHIFT: instr.rs1 <= instr.rd; // substitute rs1 address by rd in fetched instruction: trick to apply shifting to a previous shifts result, TODO: move to INSTR_PROCESS section
+            PREPARE_SHIFT: begin end
             READ_MEMORY: register_file[instr.rd] <= bus_from_mem_32;
             WRITE_MEMORY: begin end
             ERROR: begin end
