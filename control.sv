@@ -154,7 +154,7 @@ module control #(parameter START_ADDR = 0)
         AluCtrl ctrl;
         ctrl = 5'bxxxxx;
 
-        if(enable_preinit_only || currState == PREP_NEXT_SHIFT)
+        if(enable_preinit_only_for_shift || currState == PREP_NEXT_SHIFT)
             ctrl = decodedAluCmd.ctrl; // for RSHFT operation
         else
             // Need preinit carry_in=1 for SUB operations
@@ -163,8 +163,7 @@ module control #(parameter START_ADDR = 0)
         setAluArgs(DISABLED, ctrl, UNDEF, 'x, 'x);
     endfunction
 
-    //TODO: rename to enable_preinit_only_for_shift
-    wire enable_preinit_only = (currState == INCR_PC_STORE && i_s.is_shift_operation);
+    wire enable_preinit_only_for_shift = (currState == INCR_PC_STORE && i_s.is_shift_operation);
 
     loopOverAllNibbles l(
         .clk,
@@ -173,6 +172,7 @@ module control #(parameter START_ADDR = 0)
         .word1(alu_w1),
         .word2(alu_w2),
         .preinit_result(alu_preinit_result),
+        .enable_preinit_only(enable_preinit_only_for_shift),
         .result(alu_result),
         .busy(alu_busy),
         .*
