@@ -6,7 +6,7 @@ typedef enum logic[3:0] {
     INCR_PC_PRELOAD, // Need to preload ALU before INCR_PC_CALC_POST will be called
     INCR_PC_STORE, // Store incremented PC value from ALU accumulator register
     INSTR_PROCESS, // Calls ALU if need
-    PREPARE_SHIFT, // Prepare next shift stage, TODO: rename to PREP_NEXT_SHIFT
+    PREP_NEXT_SHIFT, // Prepare next shift stage, TODO: rename to PREP_NEXT_SHIFT
     INSTR_BRANCH, // Processing instruction which implies (unconditional?) PC changing
     BRANCH_PC_CALC,
     BRANCH_PC_PRELOAD,
@@ -213,7 +213,7 @@ module control #(parameter START_ADDR = 0)
             begin
                 unique case(opCode)
                     LUI, JAL, JALR: nextState = INSTR_FETCH;
-                    OP, OP_IMM: nextState = (i_s.is_shift_operation && shift_loop_busy) ? PREPARE_SHIFT : INSTR_FETCH;
+                    OP, OP_IMM: nextState = (i_s.is_shift_operation && shift_loop_busy) ? PREP_NEXT_SHIFT : INSTR_FETCH;
                     AUIPC: nextState = INCR_PC_PRELOAD;
                     BRANCH: nextState = comparison_result ? BRANCH_PC_PRELOAD : INCR_PC_PRELOAD;
                     LOAD: nextState = READ_MEMORY;
@@ -224,7 +224,7 @@ module control #(parameter START_ADDR = 0)
             INSTR_BRANCH: nextState = INSTR_FETCH;
             BRANCH_PC_PRELOAD: nextState = BRANCH_PC_CALC;
             BRANCH_PC_CALC: nextState = INCR_PC_STORE;
-            PREPARE_SHIFT: nextState = INSTR_PROCESS;
+            PREP_NEXT_SHIFT: nextState = INSTR_PROCESS;
             READ_MEMORY: nextState = INSTR_FETCH;
             WRITE_MEMORY: nextState = INSTR_FETCH;
             default: nextState = ERROR; //TODO: remove
@@ -416,7 +416,7 @@ module control #(parameter START_ADDR = 0)
                 default: disableAlu();
             endcase
 
-            PREPARE_SHIFT: disableAlu();
+            PREP_NEXT_SHIFT: disableAlu();
 
             READ_MEMORY:
             begin
@@ -453,7 +453,7 @@ module control #(parameter START_ADDR = 0)
                 if(
                     nextState == INSTR_FETCH ||
                     nextState == INCR_PC_PRELOAD ||
-                    nextState == PREPARE_SHIFT ||
+                    nextState == PREP_NEXT_SHIFT ||
                     nextState == BRANCH_PC_PRELOAD
                 )
                 begin
@@ -468,7 +468,7 @@ module control #(parameter START_ADDR = 0)
 
             end
             INSTR_BRANCH: pc <= alu_result;
-            PREPARE_SHIFT: begin end
+            PREP_NEXT_SHIFT: begin end
             READ_MEMORY: register_file[instr.rd] <= bus_from_mem_32;
             WRITE_MEMORY: begin end
             ERROR: begin end
