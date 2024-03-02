@@ -6,7 +6,7 @@ typedef enum logic[4:0] {
     COMP =5'b01000, // A-B-1 operation, if A!=B then established carry out bit means A>B, otherwise A<B
     AND  =5'bx0101,
     OR   =5'bx0110,
-    RSHFT=5'b00111  // moves data2 bits to right (SLR), data1 is ignored
+    RSHFT=5'bx0111  // moves data2 bits to right (SLR), data1 is ignored
 } AluCmd;
 
 typedef struct packed

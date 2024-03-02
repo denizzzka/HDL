@@ -18,7 +18,7 @@ module loopOverAllNibbles
     );
 
     // "reverse" means from MSB to LSB
-    wire reverse_direction = (ctrl.cmd == RSHFT) ? 1 : 0;
+    wire reverse_direction = (ctrl.ctrl.cmd == 'b_11 /* RSHFT */);
     wire[3:0] reset_val = reverse_direction ? 4'(loop_nibbles_number) : 0;
 
     logic[3:0] counter; // contains additional overflow control bit
@@ -130,6 +130,8 @@ module loopOverAllNibbles_test;
 
     loopOverAllNibbles l(.*);
 
+    AluCtrl rshft;
+
     task loop_one_word
         (
             input AluCmd cmd,
@@ -231,8 +233,14 @@ module loopOverAllNibbles_test;
 
         loop_nibbles_number = 'b111;
 
-        loop_one_word(RSHFT, 'h_xxxx_xxxx, RSH_VAL);
+        rshft.cmd = RSHFT;
+        rshft.ctrl.carry_in = 0;
+        loop_one_word(rshft.cmd, 'h_xxxx_xxxx, RSH_VAL);
         assert(result == RSH_VAL >> 1); else $error("word2=%b result=%b must be=%b", word2, result, RSH_VAL >> 1);
+
+        rshft.ctrl.carry_in = 1;
+        loop_one_word(rshft.cmd, 'h_xxxx_xxxx, RSH_VAL);
+        assert(result == (RSH_VAL >> 1) + 32'h_8000_0000); else $error("word2=%h result=%h must be=%h", word2, result, (RSH_VAL >> 1) + 32'h_8000_0000);
 
         loop_one_word(COMP, 'h_1234_1234, 'h_1234_1234); // A-B-1 operation
         assert(result == 'h_ffff_ffff); else $error("result=%h", result);
