@@ -155,7 +155,7 @@ module control #(parameter START_ADDR = 0)
         ctrl = 5'bxxxxx;
 
         if(enable_preinit_only || currState == PREP_NEXT_SHIFT)
-            ctrl = i_s.decodedAluCmd.ctrl; // for RSHFT operation
+            ctrl = decodedAluCmd.ctrl; // for RSHFT operation
         else
             // Need preinit carry_in=1 for SUB operations
             ctrl.ctrl.carry_in = (opCode == OP) ? i_s.sub_sra_modifier : 0;
@@ -349,8 +349,8 @@ module control #(parameter START_ADDR = 0)
                             disableAlu();
                         else
                             setAluArgs(
-                                BITS_32, ADD, UNSIGNED,
-                                rs1, rs1 //FIXME: left shift only implemented
+                                BITS_32, decodedAluCmd.ctrl, UNSIGNED,
+                                rs1, rs1
                             );
                     end
                 end
