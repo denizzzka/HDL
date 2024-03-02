@@ -40,8 +40,8 @@ module control_test_bench;
             //~ '{instr: 'h_0083e2b3, ret_must_be: 'b_111110, check_memory: 0}, // or x5, x7, x8
             //~ '{instr: 'h_0083c2b3, ret_must_be: 'b_111100, check_memory: 0}, // xor x5, x7, x8
             //~ '{instr: 'h_403202b3, ret_must_be: 'h_010, check_memory: 0},    // sub x5, x4, x3
-            //~ '{instr: 'h_00041293, ret_must_be: 'b_010110, check_memory: 0} // slli x5, x8, 0
-            '{instr: 'h_00241293, ret_must_be: 'b_1011000, check_memory: 0}    // slli x5, x8, 2
+            '{instr: 'h_00041293, ret_must_be: 'b_010110, check_memory: 0}, // slli x5, x8, 0
+            '{instr: 'h_00241293, ret_must_be: 'b_1011000, check_memory: 0} // slli x5, x8, 2
         };
 
     logic[7:0] clk_count;

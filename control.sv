@@ -20,7 +20,6 @@ module CtrlStateFSM
         input wire clk,
         input wire need_alu, // ...loop before next state
         input wire alu_busy,
-        //~ input wire shift_in_progress,
         input wire ControlState nextState,
         input wire pre_incr_pc,
         output wire alu_perm_to_count,
@@ -175,11 +174,10 @@ module control #(parameter START_ADDR = 0)
         .*
     );
 
-    //TODO: start value can be commutated for free at any state except INSTR_PROCESS 
+    //TODO: start value can be commutated for free at any state except INSTR_PROCESS
     wire[4:0] shift_loop_start_val = (opCode == OP_IMM) ? 5'(decoded.immediate_value12) :  5'(rs2) /* OP */;
     wire shift_reset = (currState == INCR_PC_STORE) && i_s.is_shift_operation;
     wire shift_loop_step = (~alu_busy && currState == INSTR_PROCESS) || shift_reset;
-    //~ wire shift_in_progress = (currState == INSTR_PROCESS) && i_s.is_shift_operation && shift_loop_busy;
 
     shift_loop sl(
         .decrease_pulse(shift_loop_step),
@@ -211,22 +209,6 @@ module control #(parameter START_ADDR = 0)
             INCR_PC_PRELOAD: nextState = INCR_PC_CALC_POST;
             INCR_PC_CALC_POST: nextState = INCR_PC_STORE;
             INCR_PC_STORE: nextState = pre_incr_pc ? ((opCode == JAL || opCode == JALR) ? INSTR_BRANCH : INSTR_PROCESS) : INSTR_FETCH;
-            //~ begin
-                //~ if(pre_incr_pc)
-                //~ begin
-                    //~ if(opCode == JAL || opCode == JALR)
-                        //~ nextState = INSTR_BRANCH;
-                    //~ else
-                    //~ begin
-                        //~ if((opCode == OP || opCode == OP_IMM) && i_s.is_shift_operation)
-                            //~ nextState = PREPARE_SHIFT;
-                        //~ else
-                            //~ nextState = INSTR_PROCESS;
-                    //~ end
-                //~ end
-                //~ else
-                    //~ nextState = INSTR_FETCH;
-            //~ end
             INSTR_PROCESS:
             begin
                 unique case(opCode)
@@ -242,7 +224,7 @@ module control #(parameter START_ADDR = 0)
             INSTR_BRANCH: nextState = INSTR_FETCH;
             BRANCH_PC_PRELOAD: nextState = BRANCH_PC_CALC;
             BRANCH_PC_CALC: nextState = INCR_PC_STORE;
-            PREPARE_SHIFT: nextState = INSTR_PROCESS; //shift_loop_busy ? INSTR_PROCESS : INSTR_FETCH;
+            PREPARE_SHIFT: nextState = INSTR_PROCESS;
             READ_MEMORY: nextState = INSTR_FETCH;
             WRITE_MEMORY: nextState = INSTR_FETCH;
             default: nextState = ERROR; //TODO: remove

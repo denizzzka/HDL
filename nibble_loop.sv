@@ -124,7 +124,7 @@ module loopOverAllNibbles_test;
     logic[31:0] word1;
     logic[31:0] word2;
     logic[31:0] preinit_result;
-    logic enable_preinit;
+    logic enable_preinit_only;
     logic[31:0] result;
     wire busy;
 
