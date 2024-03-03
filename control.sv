@@ -118,7 +118,7 @@ module control #(parameter START_ADDR = 0)
         alu_w2 = word2;
         alu_ctrl = ctrl;
 
-        need_alu = ~(aluMode == DISABLED || (opCode == BRANCH && (aluMode == BITS_32_COMPARE || aluMode == BITS_32_EQUALITY) && compare_resultKnown));
+        need_alu = ~(aluMode == DISABLED || (opCode == BRANCH && (aluMode == BITS_32_COMPARE || aluMode == BITS_32_EQUALITY) && compare_resultKnownAndValuesNotEqual));
         assign check_if_result_0xF = (aluMode == BITS_32_EQUALITY);
 
         unique case(aluMode)
@@ -213,7 +213,7 @@ module control #(parameter START_ADDR = 0)
         logic r;
         r = carry_in_out;
 
-        if(compare_resultKnown)
+        if(compare_resultKnownAndValuesNotEqual)
         begin
             if(~i_s.branch_lessMoreOperation) // BEQ or BNE
                 r = 1;
@@ -309,7 +309,7 @@ module control #(parameter START_ADDR = 0)
 
     // Makes some decisions about two signed values by comparing its signs
     wire SignedsCmpDecision signedsDecis = SignedsCmpDecision'({ rs1[31], rs2[31] });
-    wire compare_resultKnown = (signedsDecis == RS1_lt_RS2 || signedsDecis == RS1_gt_RS2);
+    wire compare_resultKnownAndValuesNotEqual = (signedsDecis == RS1_lt_RS2 || signedsDecis == RS1_gt_RS2);
 
     wire[31:0] rs1 = register_file[instr.rs1];
     wire[31:0] rs2 = register_file[instr.rs2];
