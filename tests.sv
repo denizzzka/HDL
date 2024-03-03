@@ -41,6 +41,8 @@ module control_test_bench;
             '{instr: 'h_ff8502e7, ret_must_be: start_addr + 4, ct: PC_BRN}, // jalr x5, -8(x10)
             '{instr: 'h_fe318ce3, ret_must_be: 'h_dead_beef, ct: PC_BRN},   // beq x3, x3, -8
             '{instr: 'h_fe418ce3, ret_must_be: 'h_dead_beef, ct: X5},       // beq x3, x4, -8
+            '{instr: 'h_fe319ce3, ret_must_be: 'h_dead_beef, ct: X5},       // bne x3, x3, -8
+            '{instr: 'h_fe419ce3, ret_must_be: 'h_dead_beef, ct: PC_BRN},   // bne x3, x4, -8
             '{instr: 'h_fe846ce3, ret_must_be: 'h_dead_beef, ct: X5},       // bltu x8, x8, -8
             '{instr: 'h_fe63ece3, ret_must_be: 'h_dead_beef, ct: PC_BRN},   // bltu x7, x6, -8
             '{instr: 'h_fe736ce3, ret_must_be: 'h_dead_beef, ct: X5},       // bltu x6, x7, -8
