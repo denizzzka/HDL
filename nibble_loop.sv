@@ -242,8 +242,17 @@ module loopOverAllNibbles_test;
         loop_one_word(rshft.cmd, 'h_xxxx_xxxx, RSH_VAL);
         assert(result == (RSH_VAL >> 1) + 32'h_8000_0000); else $error("word2=%h result=%h must be=%h", word2, result, (RSH_VAL >> 1) + 32'h_8000_0000);
 
-        loop_one_word(COMP, 'h_1234_1234, 'h_1234_1234); // A-B-1 operation
+        loop_one_word(COMP, 'h_1234_1234, 'h_1234_1234); // A-B-1 operation, A == B
         assert(result == 'h_ffff_ffff); else $error("result=%h", result);
+        assert(carry_in_out == 0);
+
+        loop_one_word(COMP, 'h_1234_1233, 'h_1234_1234); // A-B-1 operation, A < B
+        assert(result == 'h_ffff_fffe); else $error("result=%h", result);
+        assert(carry_in_out == 0); // A < B
+
+        loop_one_word(COMP, 'h_1234_1234, 'h_1234_1233); // A-B-1 operation, A > B
+        assert(result == 'h_0000_0000); else $error("result=%h", result);
+        assert(carry_in_out == 1); // A < B
 
         loop_one_word(SUB, 'h_0000_1000, 'h_0000_0500);
         assert(result == 'h_0000_0b00); else $error("result=%h", result);
