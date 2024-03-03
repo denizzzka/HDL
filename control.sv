@@ -94,7 +94,7 @@ module control #(parameter START_ADDR = 0)
         BITS_16,
         BITS_24,
         BITS_32,
-        BITS_32_COMPARE // enables check_if_result_0xF
+        BITS_32_COMPARE // enables check_if_result_0xF, TODO: rename to BITS_32_EQUALITY
     } AluMode;
 
     typedef enum logic {
@@ -117,7 +117,7 @@ module control #(parameter START_ADDR = 0)
         alu_w2 = word2;
         alu_ctrl = ctrl;
 
-        need_alu = (aluMode != DISABLED);
+        need_alu = ~(aluMode == DISABLED || (opCode == BRANCH && aluMode == BITS_32 && isSigned && signeds_resultKnown));
         assign check_if_result_0xF = (aluMode == BITS_32_COMPARE);
 
         unique case(aluMode)
@@ -203,7 +203,7 @@ module control #(parameter START_ADDR = 0)
     // Increment PC before executing instruction?
     wire pre_incr_pc = !(opCode == AUIPC || opCode == BRANCH);
 
-    wire comparison_failed = carry_in_out ^ i_s.branch_invertOperation;
+    wire comparison_failed = (((~i_s.branch_isUnsignedOperation) && signeds_resultKnown) ? (signedsDecis == RS1_gt_RS2) : carry_in_out) ^ i_s.branch_invertOperation;
 
     always_comb
         unique case(currState)
@@ -278,6 +278,17 @@ module control #(parameter START_ADDR = 0)
         release mem_addr_bus;
         release bus_to_mem_32;
     endtask
+
+    typedef enum logic[1:0] {
+        RS1_lt_RS2  = 'b_10, // rs1 < rs2
+        RS1_gt_RS2  = 'b_01, // rs1 > rs2
+        POSITIVES   = 'b_00,
+        NEGATIVES   = 'b_11
+    } SignedsCmpDecision;
+
+    // Makes some decisions about two signed values by comparing its signs
+    wire SignedsCmpDecision signedsDecis = SignedsCmpDecision'({ rs1[31], rs2[31] });
+    wire signeds_resultKnown = (signedsDecis == RS1_lt_RS2 || signedsDecis == RS1_gt_RS2);
 
     wire[31:0] rs1 = register_file[instr.rs1];
     wire[31:0] rs2 = register_file[instr.rs2];
@@ -366,7 +377,7 @@ module control #(parameter START_ADDR = 0)
                 begin
                     setAluArgs(
                         i_s.branch_lessMoreOperation ? BITS_32 : BITS_32_COMPARE,
-                        decodedAluCmd.ctrl, UNSIGNED,
+                        decodedAluCmd.ctrl, i_s.branch_isUnsignedOperation ? UNSIGNED : SIGNED,
                         rs2, rs1 // Unfortunately, swapped because it is need to check A>B, not A<=B (TODO: swap it back again?)
                     );
                 end
