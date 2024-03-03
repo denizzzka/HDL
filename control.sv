@@ -94,6 +94,7 @@ module control #(parameter START_ADDR = 0)
         BITS_16,
         BITS_24,
         BITS_32,
+        BITS_32_COMPARE,
         BITS_32_EQUALITY // enables check_if_result_0xF
     } AluMode;
 
@@ -117,7 +118,7 @@ module control #(parameter START_ADDR = 0)
         alu_w2 = word2;
         alu_ctrl = ctrl;
 
-        need_alu = ~(aluMode == DISABLED || (opCode == BRANCH && aluMode == BITS_32 && isSigned && signeds_resultKnown));
+        need_alu = ~(aluMode == DISABLED || (opCode == BRANCH && (aluMode == BITS_32_COMPARE || aluMode == BITS_32_EQUALITY) && isSigned && signeds_resultKnown));
         assign check_if_result_0xF = (aluMode == BITS_32_EQUALITY);
 
         unique case(aluMode)
@@ -128,6 +129,7 @@ module control #(parameter START_ADDR = 0)
             BITS_16: loop_nibbles_number = 3;
             BITS_24: loop_nibbles_number = 5;
             BITS_32,
+            BITS_32_COMPARE,
             BITS_32_EQUALITY: loop_nibbles_number = 7;
         endcase
 
@@ -142,11 +144,12 @@ module control #(parameter START_ADDR = 0)
             BITS_16: msb = word2[15];
             BITS_24: msb = word2[23];
             BITS_32,
+            BITS_32_COMPARE,
             BITS_32_EQUALITY: msb = word2[31];
             default: msb = 'x;
         endcase
 
-        word2_is_signed_and_negative = (isSigned == SIGNED) && msb;
+        word2_is_signed_and_negative = (aluMode != BITS_32_COMPARE && aluMode != BITS_32_EQUALITY && isSigned == SIGNED) && msb;
 
     endfunction
 
@@ -203,7 +206,7 @@ module control #(parameter START_ADDR = 0)
     // Increment PC before executing instruction?
     wire pre_incr_pc = !(opCode == AUIPC || opCode == BRANCH);
 
-    wire comparison_failed = (((~i_s.branch_isUnsignedOperation) && signeds_resultKnown) ? (signedsDecis == RS1_gt_RS2) : carry_in_out) ^ i_s.branch_invertOperation;
+    wire comparison_failed = (((~i_s.branch_isUnsignedOperation) && signeds_resultKnown) ? (signedsDecis == RS1_lt_RS2) : carry_in_out) ^ i_s.branch_invertOperation;
 
     always_comb
         unique case(currState)
@@ -376,9 +379,11 @@ module control #(parameter START_ADDR = 0)
                 BRANCH:
                 begin
                     setAluArgs(
-                        i_s.branch_lessMoreOperation ? BITS_32 : BITS_32_EQUALITY,
-                        decodedAluCmd.ctrl, i_s.branch_isUnsignedOperation ? UNSIGNED : SIGNED,
-                        rs2, rs1 // Unfortunately, swapped because it is need to check A>B, not A<=B (TODO: swap it back again?)
+                        i_s.branch_lessMoreOperation ? BITS_32_COMPARE : BITS_32_EQUALITY,
+                        decodedAluCmd.ctrl,
+                        i_s.branch_isUnsignedOperation ? UNSIGNED : SIGNED,
+                        signedsDecis == NEGATIVES ? rs1 : rs2,
+                        signedsDecis == NEGATIVES ? rs2 : rs1
                     );
                 end
 

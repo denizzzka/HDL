@@ -49,6 +49,14 @@ module control_test_bench;
             '{instr: 'h_fe31fce3, ret_must_be: 'h_dead_beef, ct: PC_BRN},   // bgeu x3, x3, -8
             '{instr: 'h_fe41fce3, ret_must_be: 'h_dead_beef, ct: X5},       // bgeu x3, x4, -8
             '{instr: 'h_fe327ce3, ret_must_be: 'h_dead_beef, ct: PC_BRN},   // bgeu x4, x3, -8
+            '{instr: 'h_fe844ce3, ret_must_be: 'h_dead_beef, ct: X5},       // blt x8, x8, -8
+            '{instr: 'h_fe41cce3, ret_must_be: 'h_dead_beef, ct: PC_BRN},   // blt x3, x4, -8
+            '{instr: 'h_fe63cce3, ret_must_be: 'h_dead_beef, ct: X5},       // blt x7, x6, -8
+            '{instr: 'h_fe734ce3, ret_must_be: 'h_dead_beef, ct: PC_BRN},   // blt x6, x7, -8
+            '{instr: 'h_fe635ce3, ret_must_be: 'h_dead_beef, ct: PC_BRN},   // bge x6, x6, -8
+            '{instr: 'h_fe41dce3, ret_must_be: 'h_dead_beef, ct: X5},       // bge x3, x4, -8
+            '{instr: 'h_fe535ce3, ret_must_be: 'h_dead_beef, ct: PC_BRN},   // bge x6, x5, -8
+            '{instr: 'h_fe62dce3, ret_must_be: 'h_dead_beef, ct: X5},       // bge x5, x6, -8
             '{instr: 'h_004182b3, ret_must_be: 'h_210, ct: X5},     // add x5, x3, x4
             '{instr: 'h_0083f2b3, ret_must_be: 'b_000010, ct: X5},  // and x5, x7, x8
             '{instr: 'h_0083e2b3, ret_must_be: 'b_111110, ct: X5},  // or x5, x7, x8
@@ -107,8 +115,8 @@ module control_test_bench;
             //~ $monitor("Test #%0d state=%s next=%s opCode=%s prePC=%b pc=%h instr=%h nnumber=%h nibble=%h alu_result=%h alu_w2=%h", i, c.currState.name, c.nextState.name, c.opCode.name, c.pre_incr_pc, c.pc, c.instr, c.loop_nibbles_number, c.l.curr_nibble_idx, c.alu_result, c.alu_w2);
             //~ $monitor("Test #%0d state=%s next=%s opCode=%s prePC=%b pc=%h instr=%h nnumber=%h nibble=%h alu_result=%h carry_ret=%b check_0xF=%b alu_w1=%h alu_w2=%h alu_ctrl=%b", i, c.currState.name, c.nextState.name, c.opCode.name, c.pre_incr_pc, c.pc, c.instr, c.loop_nibbles_number, c.l.curr_nibble_idx, c.alu_result, c.carry_in_out, c.check_if_result_0xF, c.alu_w1, c.alu_w2, c.alu_ctrl);
             //~ $monitor("Test #%0d state=%s next=%s opCode=%s(%s) prePC=%b pc=%h instr=%h nnumber=%h nibble=%h alu_result=%h carry_ret=%b check_0xF=%b alu_w1=%h alu_w2=%h alu_ctrl=%b", i, c.currState.name, c.nextState.name, c.opCode.name, c.i_s.riscv_branchCmd.name, c.pre_incr_pc, c.pc, c.instr, c.loop_nibbles_number, c.l.curr_nibble_idx, c.alu_result, c.carry_in_out, c.check_if_result_0xF, c.alu_w1, c.alu_w2, c.alu_ctrl);
+            //~ $monitor("Test #%0d state=%s next=%s opCode=%s(%s) known=%b pc=%h instr=%h nnumber=%h nibble=%h alu_result=%h carry_ret=%b check_0xF=%b alu_w1=%h alu_w2=%h alu_ctrl=%b", i, c.currState.name, c.nextState.name, c.opCode.name, c.i_s.riscv_branchCmd.name, c.signeds_resultKnown, c.pc, c.instr, c.loop_nibbles_number, c.l.curr_nibble_idx, c.alu_result, c.carry_in_out, c.check_if_result_0xF, c.alu_w1, c.alu_w2, c.alu_ctrl);
             //~ $monitor("Test #%0d stt=%s nxt=%s op=%s cmd=%s ins=%h shift_cnt=%h nnum=%h nibble=%h shift_busy=%b shift_step=%b alu_busy=%b perm=%b alu_res=%h carry=%b alu_w1(%h)=%h alu_w2=%h alu_ctrl=%b", i, c.currState.name, c.nextState.name, c.opCode.name, c.i_s.riscv_aluCmd.name, c.instr, c.sl.curr_val, c.loop_nibbles_number, c.l.curr_nibble_idx, c.shift_loop_busy, c.shift_loop_step, c.alu_busy, c.alu_perm_to_count, c.alu_result, c.carry_in_out, c.instr.rs1, c.alu_w1, c.alu_w2, c.alu_ctrl);
-            //~ $monitor("Test #%0d stt=%s nxt=%s op=%s ins=%h UnsigOp=%b resKnown=%b shift_cnt=%h nnum=%h nibble=%h busy=%b shift_step=%b alu_busy=%b perm=%b res=%h carry=%b w1=%h w2=%h ctrl=%b", i, c.currState.name, c.nextState.name, c.opCode.name, c.instr, c.i_s.branch_isUnsignedOperation, c.signeds_resultKnown, c.sl.curr_val, c.loop_nibbles_number, c.l.curr_nibble_idx, c.shift_loop_busy, c.shift_loop_step, c.alu_busy, c.alu_perm_to_count, c.alu_result, c.carry_in_out, c.instr.rs1, c.alu_w1, c.alu_w2, c.alu_ctrl);
 
             do begin
                 assert(c.currState != ERROR); else $error("currState=%s", c.currState.name);
