@@ -118,7 +118,7 @@ module control #(parameter START_ADDR = 0)
         alu_w2 = word2;
         alu_ctrl = ctrl;
 
-        need_alu = ~(aluMode == DISABLED || (opCode == BRANCH && (aluMode == BITS_32_COMPARE || aluMode == BITS_32_EQUALITY) && isSigned && signeds_resultKnown));
+        need_alu = ~(aluMode == DISABLED || (opCode == BRANCH && (aluMode == BITS_32_COMPARE || aluMode == BITS_32_EQUALITY) && signeds_resultKnown));
         assign check_if_result_0xF = (aluMode == BITS_32_EQUALITY);
 
         unique case(aluMode)
@@ -206,7 +206,7 @@ module control #(parameter START_ADDR = 0)
     // Increment PC before executing instruction?
     wire pre_incr_pc = !(opCode == AUIPC || opCode == BRANCH);
 
-    wire comparison_failed = (((~i_s.branch_isUnsignedOperation) && signeds_resultKnown) ? (signedsDecis == RS1_lt_RS2) : carry_in_out) ^ i_s.branch_invertOperation;
+    wire comparison_failed = (signeds_resultKnown ? (signedsDecis == RS1_lt_RS2) : carry_in_out) ^ i_s.branch_invertOperation;
 
     always_comb
         unique case(currState)
@@ -291,7 +291,7 @@ module control #(parameter START_ADDR = 0)
 
     // Makes some decisions about two signed values by comparing its signs
     wire SignedsCmpDecision signedsDecis = SignedsCmpDecision'({ rs1[31], rs2[31] });
-    wire signeds_resultKnown = (signedsDecis == RS1_lt_RS2 || signedsDecis == RS1_gt_RS2);
+    wire signeds_resultKnown = ~i_s.branch_isUnsignedOperation && (signedsDecis == RS1_lt_RS2 || signedsDecis == RS1_gt_RS2);
 
     wire[31:0] rs1 = register_file[instr.rs1];
     wire[31:0] rs2 = register_file[instr.rs2];
@@ -382,8 +382,8 @@ module control #(parameter START_ADDR = 0)
                         i_s.branch_lessMoreOperation ? BITS_32_COMPARE : BITS_32_EQUALITY,
                         decodedAluCmd.ctrl,
                         i_s.branch_isUnsignedOperation ? UNSIGNED : SIGNED,
-                        signedsDecis == NEGATIVES ? rs1 : rs2,
-                        signedsDecis == NEGATIVES ? rs2 : rs1
+                        (~i_s.branch_isUnsignedOperation && signedsDecis == NEGATIVES) ? rs1 : rs2, //TODO: replace by operand inversion?
+                        (~i_s.branch_isUnsignedOperation && signedsDecis == NEGATIVES) ? rs2 : rs1
                     );
                 end
 
