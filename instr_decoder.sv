@@ -105,7 +105,7 @@ module instr_stencil
             else
                 decodedAluCmd.ctrl = XNOR;
 
-    wire branch_invertOperation = riscv_branchCmd[0];
+    wire branch_invertOperation = ~riscv_branchCmd[0];
     wire branch_isUnsignedOperation = riscv_branchCmd[1];
     wire branch_lessMoreOperation = riscv_branchCmd[2];
 

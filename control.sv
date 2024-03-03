@@ -203,7 +203,7 @@ module control #(parameter START_ADDR = 0)
     // Increment PC before executing instruction?
     wire pre_incr_pc = !(opCode == AUIPC || opCode == BRANCH);
 
-    wire comparison_failed = (opCode == BRANCH) ? (carry_in_out ^ i_s.branch_invertOperation) : carry_in_out;
+    wire comparison_failed = carry_in_out ^ i_s.branch_invertOperation;
 
     always_comb
         unique case(currState)
@@ -367,7 +367,7 @@ module control #(parameter START_ADDR = 0)
                     setAluArgs(
                         i_s.branch_lessMoreOperation ? BITS_32 : BITS_32_COMPARE,
                         decodedAluCmd.ctrl, UNSIGNED,
-                        rs1, rs2
+                        rs2, rs1 // Unfortunately, swapped because it is need to check A>B, not A<=B (TODO: swap it back again?)
                     );
                 end
 
