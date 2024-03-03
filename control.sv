@@ -118,7 +118,7 @@ module control #(parameter START_ADDR = 0)
         alu_w2 = word2;
         alu_ctrl = ctrl;
 
-        need_alu = ~(aluMode == DISABLED || (opCode == BRANCH && (aluMode == BITS_32_COMPARE || aluMode == BITS_32_EQUALITY) && signeds_resultKnown));
+        need_alu = ~(aluMode == DISABLED || (opCode == BRANCH && (aluMode == BITS_32_COMPARE || aluMode == BITS_32_EQUALITY) && compare_resultKnown));
         assign check_if_result_0xF = (aluMode == BITS_32_EQUALITY);
 
         unique case(aluMode)
@@ -206,7 +206,25 @@ module control #(parameter START_ADDR = 0)
     // Increment PC before executing instruction?
     wire pre_incr_pc = !(opCode == AUIPC || opCode == BRANCH);
 
-    wire comparison_failed = (signeds_resultKnown ? (signedsDecis == RS1_lt_RS2) : carry_in_out) ^ i_s.branch_invertOperation;
+    logic comparison_failed;
+
+    always_comb
+    begin
+        logic r;
+        r = carry_in_out;
+
+        if(compare_resultKnown)
+        begin
+            if(~i_s.branch_lessMoreOperation) // BEQ or BNE
+                r = 1;
+            else if(i_s.branch_isUnsignedOperation)
+                r = (signedsDecis == RS1_gt_RS2);
+            else
+                r = (signedsDecis == RS1_lt_RS2);
+        end
+
+        comparison_failed = r ^ i_s.branch_invertOperation;
+    end
 
     always_comb
         unique case(currState)
@@ -283,15 +301,15 @@ module control #(parameter START_ADDR = 0)
     endtask
 
     typedef enum logic[1:0] {
-        RS1_lt_RS2  = 'b_10, // rs1 < rs2
-        RS1_gt_RS2  = 'b_01, // rs1 > rs2
+        RS1_lt_RS2  = 'b_10, // rs1 < rs2 if signed, rs1 > rs2 if unsigned
+        RS1_gt_RS2  = 'b_01, // rs1 > rs2 if signed, rs1 < rs2 if unsigned
         POSITIVES   = 'b_00,
         NEGATIVES   = 'b_11
     } SignedsCmpDecision;
 
     // Makes some decisions about two signed values by comparing its signs
     wire SignedsCmpDecision signedsDecis = SignedsCmpDecision'({ rs1[31], rs2[31] });
-    wire signeds_resultKnown = ~i_s.branch_isUnsignedOperation && (signedsDecis == RS1_lt_RS2 || signedsDecis == RS1_gt_RS2);
+    wire compare_resultKnown = (signedsDecis == RS1_lt_RS2 || signedsDecis == RS1_gt_RS2);
 
     wire[31:0] rs1 = register_file[instr.rs1];
     wire[31:0] rs2 = register_file[instr.rs2];
