@@ -94,7 +94,7 @@ module control #(parameter START_ADDR = 0)
         BITS_16,
         BITS_24,
         BITS_32,
-        BITS_32_COMPARE // enables check_if_result_0xF, TODO: rename to BITS_32_EQUALITY
+        BITS_32_EQUALITY // enables check_if_result_0xF
     } AluMode;
 
     typedef enum logic {
@@ -118,7 +118,7 @@ module control #(parameter START_ADDR = 0)
         alu_ctrl = ctrl;
 
         need_alu = ~(aluMode == DISABLED || (opCode == BRANCH && aluMode == BITS_32 && isSigned && signeds_resultKnown));
-        assign check_if_result_0xF = (aluMode == BITS_32_COMPARE);
+        assign check_if_result_0xF = (aluMode == BITS_32_EQUALITY);
 
         unique case(aluMode)
             DISABLED: loop_nibbles_number = 7; // 7 is for RSHFT preinit
@@ -128,7 +128,7 @@ module control #(parameter START_ADDR = 0)
             BITS_16: loop_nibbles_number = 3;
             BITS_24: loop_nibbles_number = 5;
             BITS_32,
-            BITS_32_COMPARE: loop_nibbles_number = 7;
+            BITS_32_EQUALITY: loop_nibbles_number = 7;
         endcase
 
         // Immediate values always signed
@@ -142,7 +142,7 @@ module control #(parameter START_ADDR = 0)
             BITS_16: msb = word2[15];
             BITS_24: msb = word2[23];
             BITS_32,
-            BITS_32_COMPARE: msb = word2[31];
+            BITS_32_EQUALITY: msb = word2[31];
             default: msb = 'x;
         endcase
 
@@ -376,7 +376,7 @@ module control #(parameter START_ADDR = 0)
                 BRANCH:
                 begin
                     setAluArgs(
-                        i_s.branch_lessMoreOperation ? BITS_32 : BITS_32_COMPARE,
+                        i_s.branch_lessMoreOperation ? BITS_32 : BITS_32_EQUALITY,
                         decodedAluCmd.ctrl, i_s.branch_isUnsignedOperation ? UNSIGNED : SIGNED,
                         rs2, rs1 // Unfortunately, swapped because it is need to check A>B, not A<=B (TODO: swap it back again?)
                     );
