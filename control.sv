@@ -400,7 +400,7 @@ module control #(parameter START_ADDR = 0)
                         i_s.branch_lessMoreOperation ? BITS_32_COMPARE : BITS_32_EQUALITY,
                         decodedAluCmd.ctrl,
                         i_s.branch_isUnsignedOperation ? UNSIGNED : SIGNED,
-                        (~i_s.branch_isUnsignedOperation && signedsDecis == NEGATIVES) ? rs1 : rs2, //TODO: replace by operand inversion?
+                        (~i_s.branch_isUnsignedOperation && signedsDecis == NEGATIVES) ? rs1 : rs2,
                         (~i_s.branch_isUnsignedOperation && signedsDecis == NEGATIVES) ? rs2 : rs1
                     );
                 end
