@@ -105,7 +105,7 @@ module loopOverAllNibbles
                 if(~check_if_result_0xF)
                     carry_in_out <= result_carry;
                 else
-                    carry_in_out <= is_result_0xF;
+                    carry_in_out <= ~is_result_0xF;
             end
     end
 
@@ -260,14 +260,14 @@ module loopOverAllNibbles_test;
         // equality check operation
         check_if_result_0xF = 1;
         loop_one_word(XNOR, 'h_1234_1234, 'h_1234_1234);
-        assert(carry_in_out); else $error("result=%h", result);
+        assert(~carry_in_out); else $error("result=%h", result);
 
         // failed equality check operation
         loop_one_word(XNOR, 'h_2234_1234, 'h_1234_1234);
-        assert(~carry_in_out); else $error("result=%h", result);
+        assert(carry_in_out); else $error("result=%h", result);
 
         // failed equality check operation (short loop)
         loop_one_word(XNOR, 'h_1234_1134, 'h_1234_1234);
-        assert(~carry_in_out); else $error("result=%h", result);
+        assert(carry_in_out); else $error("result=%h", result);
     end
 endmodule

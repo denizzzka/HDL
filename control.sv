@@ -203,7 +203,7 @@ module control #(parameter START_ADDR = 0)
     // Increment PC before executing instruction?
     wire pre_incr_pc = !(opCode == AUIPC || opCode == BRANCH);
 
-    wire comparison_result = carry_in_out;
+    wire comparison_failed = (opCode == BRANCH) ? (carry_in_out ^ i_s.branch_invertOperation) : carry_in_out;
 
     always_comb
         unique case(currState)
@@ -219,7 +219,7 @@ module control #(parameter START_ADDR = 0)
                     LUI, JAL, JALR: nextState = INSTR_FETCH;
                     OP, OP_IMM: nextState = (i_s.is_shift_operation && shift_loop_busy) ? PREP_NEXT_SHIFT : INSTR_FETCH;
                     AUIPC: nextState = INCR_PC_PRELOAD;
-                    BRANCH: nextState = comparison_result ? BRANCH_PC_PRELOAD : INCR_PC_PRELOAD;
+                    BRANCH: nextState = comparison_failed ? INCR_PC_PRELOAD : BRANCH_PC_PRELOAD;
                     LOAD: nextState = READ_MEMORY;
                     STORE: nextState = WRITE_MEMORY;
                     default: nextState = ERROR;
@@ -365,7 +365,8 @@ module control #(parameter START_ADDR = 0)
                 BRANCH:
                 begin
                     setAluArgs(
-                        BITS_32_COMPARE, XNOR, UNSIGNED,
+                        i_s.branch_lessMoreOperation ? BITS_32 : BITS_32_COMPARE,
+                        decodedAluCmd.ctrl, UNSIGNED,
                         rs1, rs2
                     );
                 end

@@ -44,6 +44,15 @@ class en;
     } RiscV_Spec_AluCmd;
 endclass;
 
+typedef enum logic[2:0] {
+    BEQ  =3'b000,
+    BNE  =3'b001,
+    BLT  =3'b100,
+    BGE  =3'b101,
+    BLTU =3'b110,
+    BGEU =3'b111
+} RiscV_Spec_BranchCmd;
+
 typedef struct packed {
     AluCtrl ctrl;
     logic isUnsignedCompOrLeftShift;
@@ -73,20 +82,32 @@ module instr_stencil
     assign decoded.immediate_value20 = instr[31:12];
     assign decoded.immediate_jump = { instr[31], instr[31], instr[31], instr[31], instr[19:12],  instr[20], instr[30:21], 1'b0 };
 
+    wire RiscV_Spec_BranchCmd riscv_branchCmd = RiscV_Spec_BranchCmd'(instr.funct3);
+
     wire en::RiscV_Spec_AluCmd riscv_aluCmd = en::RiscV_Spec_AluCmd'(instr.funct3);
     wire sub_sra_modifier = instr.funct7[5];
 
     always_comb
-        unique case(riscv_aluCmd)
-            en::ADD_or_SUB: decodedAluCmd.ctrl = sub_sra_modifier ? SUB : ADD;
-            en::SLL:  decodedAluCmd.ctrl = ADD;
-            en::SLT:  decodedAluCmd.ctrl = COMP;
-            en::SLTU: decodedAluCmd.ctrl = COMP;
-            en::XOR:  decodedAluCmd.ctrl = XOR;
-            en::SRLA: decodedAluCmd.ctrl = RSHFT; //FIXME: switch between SRL and SRA using sub_sra_modifier flag
-            en::OR:   decodedAluCmd.ctrl = OR;
-            en::AND:  decodedAluCmd.ctrl = AND;
-        endcase
+        if(opCode != BRANCH) // OP or OP_IMM
+            unique case(riscv_aluCmd)
+                en::ADD_or_SUB: decodedAluCmd.ctrl = sub_sra_modifier ? SUB : ADD;
+                en::SLL:  decodedAluCmd.ctrl = ADD;
+                en::SLT:  decodedAluCmd.ctrl = COMP;
+                en::SLTU: decodedAluCmd.ctrl = COMP;
+                en::XOR:  decodedAluCmd.ctrl = XOR;
+                en::SRLA: decodedAluCmd.ctrl = RSHFT; //FIXME: switch between SRL and SRA using sub_sra_modifier flag
+                en::OR:   decodedAluCmd.ctrl = OR;
+                en::AND:  decodedAluCmd.ctrl = AND;
+            endcase
+        else // BRANCH
+            if(branch_lessMoreOperation)
+                decodedAluCmd.ctrl = COMP;
+            else
+                decodedAluCmd.ctrl = XNOR;
+
+    wire branch_invertOperation = riscv_branchCmd[0];
+    wire branch_isUnsignedOperation = riscv_branchCmd[1];
+    wire branch_lessMoreOperation = riscv_branchCmd[2];
 
     assign decodedAluCmd.isUnsignedCompOrLeftShift = instr.funct3[0];
 
