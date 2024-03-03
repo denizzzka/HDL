@@ -10,11 +10,17 @@ endmodule
 
 // TODO: implement tests for all instructions
 module control_test_bench;
+    typedef enum logic[1:0] {
+        X5      = 'b_00,
+        MEM     = 'b_01,
+        PC_BRN  = 'b_10  // successful branching
+    } CheckType;
+
     typedef struct
     {
         logic[31:0] instr;
         logic[31:0] ret_must_be;
-        logic check_memory; // otherwise x5 register
+        CheckType ct;
     } TestCmd;
 
     // all commands starting from this address
@@ -23,35 +29,35 @@ module control_test_bench;
     TestCmd cmdsToTest[] =
         '{
             // rd is always x5:
-            '{instr: 'h_07b08293, ret_must_be: 123, check_memory: 0}, // addi x5, x1, 123
-            '{instr: 'h_07b10293, ret_must_be: 124, check_memory: 0}, // addi x5, x2, 123
-            '{instr: 'h_ffe10293, ret_must_be: -1, check_memory: 0},  // addi x5, x2, -2
-            '{instr: 'h_0081a283, ret_must_be: 'h_feff_1111, check_memory: 0},  // lw x5, 8(x3)
-            '{instr: 'h_ff822283, ret_must_be: 'h_feff_1111, check_memory: 0},  // lw x5, -8(x4)
-            '{instr: 'h_fe622c23, ret_must_be: 'h_cafe_babe, check_memory: 1},  // sw x6, -8(x4)
-            '{instr: 'h_fffff2b7, ret_must_be: 'h_fffff000, check_memory: 0},   // lui x5, 0xfffff
-            '{instr: 'h_ffff0297, ret_must_be: start_addr + (-16 << 12), check_memory: 0},  // auipc x5, -16
-            '{instr: 'h_ff9ff2ef, ret_must_be: start_addr + 4, check_memory: 0},    // jal x5, -8
-            '{instr: 'h_ff8502e7, ret_must_be: start_addr + 4, check_memory: 0},    // jalr x5, -8(x10)
-            '{instr: 'h_fe318ce3, ret_must_be: start_addr + 4, check_memory: 0},    // beq x3, x3, -8
-            '{instr: 'h_fe418ce3, ret_must_be: start_addr + 4, check_memory: 0},    // beq x3, x4, -8
-            '{instr: 'h_004182b3, ret_must_be: 'h_210, check_memory: 0},    // add x5, x3, x4
-            '{instr: 'h_0083f2b3, ret_must_be: 'b_000010, check_memory: 0}, // and x5, x7, x8
-            '{instr: 'h_0083e2b3, ret_must_be: 'b_111110, check_memory: 0}, // or x5, x7, x8
-            '{instr: 'h_0083c2b3, ret_must_be: 'b_111100, check_memory: 0}, // xor x5, x7, x8
-            '{instr: 'h_403202b3, ret_must_be: 'h_010, check_memory: 0},    // sub x5, x4, x3
-            '{instr: 'h_00041293, ret_must_be: 'b_010110, check_memory: 0},         // slli x5, x8, 0
-            '{instr: 'h_00241293, ret_must_be: 'b_1011000, check_memory: 0},        // slli x5, x8, 2
-            '{instr: 'h_00035293, ret_must_be: 'h_cafe_babe, check_memory: 0},      // srli x5, x6, 0
-            '{instr: 'h_00235293, ret_must_be: 'h_cafe_babe >> 2, check_memory: 0}, // srli x5, x6, 2
-            '{instr: 'h_00b412b3, ret_must_be: 'b_010110, check_memory: 0},         // sll x5, x8, x11
-            '{instr: 'h_009412b3, ret_must_be: 'b_1011000, check_memory: 0},        // sll x5, x8, x9
-            '{instr: 'h_00b352b3, ret_must_be: 'h_cafe_babe, check_memory: 0},      // srl x5, x6, x11
-            '{instr: 'h_009352b3, ret_must_be: 'h_cafe_babe >> 2, check_memory: 0}, // srl x5, x6, x9
-            '{instr: 'h_40b352b3, ret_must_be: 'h_cafe_babe, check_memory: 0},                              // sra x5, x6, x11
-            '{instr: 'h_409352b3, ret_must_be: unsigned'(signed'('h_cafe_babe) >>> 2), check_memory: 0},    // sra x5, x6, x9
-            '{instr: 'h_40035293, ret_must_be: 'h_cafe_babe, check_memory: 0},                              // srai x5, x6, 0
-            '{instr: 'h_40235293, ret_must_be: unsigned'(signed'('h_cafe_babe) >>> 2), check_memory: 0}     // srai x5, x6, 2
+            '{instr: 'h_07b08293, ret_must_be: 123, ct: X5}, // addi x5, x1, 123
+            '{instr: 'h_07b10293, ret_must_be: 124, ct: X5}, // addi x5, x2, 123
+            '{instr: 'h_ffe10293, ret_must_be: -1, ct: X5},  // addi x5, x2, -2
+            '{instr: 'h_0081a283, ret_must_be: 'h_feff_1111, ct: X5},  // lw x5, 8(x3)
+            '{instr: 'h_ff822283, ret_must_be: 'h_feff_1111, ct: X5},  // lw x5, -8(x4)
+            '{instr: 'h_fe622c23, ret_must_be: 'h_cafe_babe, ct: MEM}, // sw x6, -8(x4)
+            '{instr: 'h_fffff2b7, ret_must_be: 'h_fffff000, ct: X5},   // lui x5, 0xfffff
+            '{instr: 'h_ffff0297, ret_must_be: start_addr + (-16 << 12), ct: X5},  // auipc x5, -16
+            '{instr: 'h_ff9ff2ef, ret_must_be: start_addr + 4, ct: PC_BRN}, // jal x5, -8
+            '{instr: 'h_ff8502e7, ret_must_be: start_addr + 4, ct: PC_BRN}, // jalr x5, -8(x10)
+            '{instr: 'h_fe318ce3, ret_must_be: 'h_dead_beef, ct: PC_BRN},   // beq x3, x3, -8
+            '{instr: 'h_fe418ce3, ret_must_be: 'h_dead_beef, ct: X5},       // beq x3, x4, -8
+            '{instr: 'h_004182b3, ret_must_be: 'h_210, ct: X5},     // add x5, x3, x4
+            '{instr: 'h_0083f2b3, ret_must_be: 'b_000010, ct: X5},  // and x5, x7, x8
+            '{instr: 'h_0083e2b3, ret_must_be: 'b_111110, ct: X5},  // or x5, x7, x8
+            '{instr: 'h_0083c2b3, ret_must_be: 'b_111100, ct: X5},  // xor x5, x7, x8
+            '{instr: 'h_403202b3, ret_must_be: 'h_010, ct: X5},     // sub x5, x4, x3
+            '{instr: 'h_00041293, ret_must_be: 'b_010110, ct: X5},         // slli x5, x8, 0
+            '{instr: 'h_00241293, ret_must_be: 'b_1011000, ct: X5},        // slli x5, x8, 2
+            '{instr: 'h_00035293, ret_must_be: 'h_cafe_babe, ct: X5},      // srli x5, x6, 0
+            '{instr: 'h_00235293, ret_must_be: 'h_cafe_babe >> 2, ct: X5}, // srli x5, x6, 2
+            '{instr: 'h_00b412b3, ret_must_be: 'b_010110, ct: X5},         // sll x5, x8, x11
+            '{instr: 'h_009412b3, ret_must_be: 'b_1011000, ct: X5},        // sll x5, x8, x9
+            '{instr: 'h_00b352b3, ret_must_be: 'h_cafe_babe, ct: X5},      // srl x5, x6, x11
+            '{instr: 'h_009352b3, ret_must_be: 'h_cafe_babe >> 2, ct: X5}, // srl x5, x6, x9
+            '{instr: 'h_40b352b3, ret_must_be: 'h_cafe_babe, ct: X5},                              // sra x5, x6, x11
+            '{instr: 'h_409352b3, ret_must_be: unsigned'(signed'('h_cafe_babe) >>> 2), ct: X5},    // sra x5, x6, x9
+            '{instr: 'h_40035293, ret_must_be: 'h_cafe_babe, ct: X5},                              // srai x5, x6, 0
+            '{instr: 'h_40235293, ret_must_be: unsigned'(signed'('h_cafe_babe) >>> 2), ct: X5}     // srai x5, x6, 2
         };
 
     logic[7:0] clk_count;
@@ -81,6 +87,7 @@ module control_test_bench;
             c.register_file[2] = 1;
             c.register_file[3] = 'h_100;
             c.register_file[4] = 'h_110;
+            c.register_file[5] = 'h_dead_beef; // ret register
             c.register_file[6] = 'h_cafe_babe;
             c.register_file[7] = 'b_101010;
             c.register_file[8] = 'b_010110;
@@ -100,19 +107,19 @@ module control_test_bench;
                 #1 clk_count++;
             end while(!(c.currState == INSTR_FETCH && c.pc != start_addr && c.clk == 0));
 
-            // command done, check result
-            if(!cmd.check_memory)
+            // command done, get result
+            if(cmd.ct[0] == 0) // result from x5?
                 ret = c.register_file[5];
             else
                 ret = c.mem.mem['h_108*8 +: 32];
 
-            if(!(i == 10 || i == 11)) // except beq
-                assert(ret == cmd.ret_must_be); else $error("Test #%0d: ret=%h but expected %h", i, ret, cmd.ret_must_be);
+            assert(ret == cmd.ret_must_be); else $error("Test #%0d: ret=%h but expected %h", i, ret, cmd.ret_must_be);
 
-            if(!(i == 8 || i == 9 || i == 10))
-                assert(c.pc == start_addr + 4); else $error("Unexpected PC=%h", c.pc);
-            else // jal || jarl || beq(success)
-                assert(c.pc == start_addr - 8); else $error("Unexpected PC=%h (expected %h)", c.pc, start_addr - 8);
+            // successful branching?
+            if(cmd.ct[1] == 1)
+                assert(c.pc == start_addr - 8); else $error("Test #%0d: Unexpected PC=%h (expected %h)", i, c.pc, start_addr - 8);
+            else
+                assert(c.pc == start_addr + 4); else $error("Test #%0d: Unexpected PC=%h (expected %h)", i, c.pc, start_addr + 4);
         end
     end
 endmodule
