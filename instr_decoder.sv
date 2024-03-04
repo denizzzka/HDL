@@ -112,6 +112,7 @@ module instr_stencil
     assign decodedAluCmd.isUnsignedCompOrLeftShift = instr.funct3[0];
 
     wire is_shift_operation = (riscv_aluCmd == en::SLL || riscv_aluCmd == en::SRLA);
+    wire is_SLT_operation = (opCode != BRANCH && riscv_aluCmd[2:1] == 'b_01);
 
     wire[26:0] imm12_fill = { {20{instr.funct7[6]}}, instr.funct7 };
 

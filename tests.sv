@@ -32,6 +32,12 @@ module control_test_bench;
             '{instr: 'h_07b08293, ret_must_be: 123, ct: X5}, // addi x5, x1, 123
             '{instr: 'h_07b10293, ret_must_be: 124, ct: X5}, // addi x5, x2, 123
             '{instr: 'h_ffe10293, ret_must_be: -1, ct: X5},  // addi x5, x2, -2
+            '{instr: 'h_00113293, ret_must_be: 0, ct: X5},  // sltiu x5, x2, 1
+            '{instr: 'h_07b13293, ret_must_be: 1, ct: X5},  // sltiu x5, x2, 123
+            '{instr: 'h_07b33293, ret_must_be: 0, ct: X5},  // sltiu x5, x6, 123
+            '{instr: 'h_ffe62293, ret_must_be: 0, ct: X5},  // slti x5, x12, -2
+            '{instr: 'h_ffe32293, ret_must_be: 1, ct: X5},  // slti x5, x6, -2
+            '{instr: 'h_ffd62293, ret_must_be: 0, ct: X5},  // slti x5, x12, -3
             '{instr: 'h_0163f293, ret_must_be: 'b_000010, ct: X5},  // andi x5, x7, 0x16
             '{instr: 'h_0163e293, ret_must_be: 'b_111110, ct: X5},  // ori x5, x7, 0x16
             '{instr: 'h_0163c293, ret_must_be: 'b_111100, ct: X5},  // xori x5, x7, 0x16
@@ -113,6 +119,7 @@ module control_test_bench;
             c.register_file[9] = 2;
             c.register_file[10] = start_addr;
             c.register_file[11] = 0;
+            c.register_file[12] = -2;
 
             //~ $monitor("Test #%0d clk_count=%0d clk=%b state=%s next=%s opCode=%s prePC=%b pc=%h instr=%h nnumber=%h nibble=%h alu_result=%h", i, clk_count, c.clk, c.currState.name, c.nextState.name, c.opCode.name, c.pre_incr_pc, c.pc, c.instr, c.loop_nibbles_number, c.l.curr_nibble_idx, c.alu_result);
             //~ $monitor("Test #%0d state=%s next=%s opCode=%s prePC=%b pc=%h instr=%h nnumber=%h nibble=%h alu_result=%h alu_w2=%h", i, c.currState.name, c.nextState.name, c.opCode.name, c.pre_incr_pc, c.pc, c.instr, c.loop_nibbles_number, c.l.curr_nibble_idx, c.alu_result, c.alu_w2);

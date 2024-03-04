@@ -91,6 +91,7 @@ module control #(parameter START_ADDR = 0)
         INCREMENT,
         BITS_8,
         BITS_12,
+        BITS_12_COMPARE,
         BITS_16,
         BITS_24,
         BITS_32,
@@ -116,8 +117,8 @@ module control #(parameter START_ADDR = 0)
         logic isSortOfComparision;
         logic swap_args;
 
-        isSortOfComparision = (aluMode == BITS_32_COMPARE || aluMode == BITS_32_EQUALITY);
-        swap_args = isSortOfComparision && ~(~i_s.branch_isUnsignedOperation && signedsDecis == NEGATIVES);
+        isSortOfComparision = (aluMode == BITS_12_COMPARE || aluMode == BITS_32_COMPARE || aluMode == BITS_32_EQUALITY);
+        swap_args = isSortOfComparision && (~(~i_s.branch_isUnsignedOperation && signedsDecis == NEGATIVES) || i_s.is_SLT_operation);
 
         alu_w1 = swap_args ? word2 : word1;
         alu_w2 = swap_args ? word1 : word2;
@@ -135,7 +136,8 @@ module control #(parameter START_ADDR = 0)
             DISABLED: loop_nibbles_number = 7; // 7 is for RSHFT preinit
             INCREMENT: loop_nibbles_number = 0;
             BITS_8: loop_nibbles_number = 1;
-            BITS_12: loop_nibbles_number = 2;
+            BITS_12,
+            BITS_12_COMPARE: loop_nibbles_number = 2;
             BITS_16: loop_nibbles_number = 3;
             BITS_24: loop_nibbles_number = 5;
             BITS_32,
@@ -349,9 +351,10 @@ module control #(parameter START_ADDR = 0)
                 begin
                     if(~i_s.is_shift_operation)
                         setAluArgs(
-                            BITS_12, decodedAluCmd.ctrl, SIGNED,
+                            i_s.is_SLT_operation ? BITS_12_COMPARE : BITS_12,
+                            decodedAluCmd.ctrl, SIGNED,
                             rs1,
-                            32'(decoded.immediate_value12)
+                            decoded.immediate_value12
                         );
                     else
                     begin
@@ -502,7 +505,12 @@ module control #(parameter START_ADDR = 0)
             INSTR_PROCESS:
             begin
                 if(~alu_busy)
-                    register_file[instr.rd] <= (opCode != LUI) ? alu_result : { decoded.immediate_value20, 12'b0 };
+                    if(opCode == LUI)
+                        register_file[instr.rd] <= { decoded.immediate_value20, 12'b0 };
+                    else if(i_s.is_SLT_operation)
+                        register_file[instr.rd] <= carry_in_out ? 1 : 0;
+                    else
+                        register_file[instr.rd] <= alu_result;
             end
             INSTR_BRANCH: pc <= alu_result;
             PREP_NEXT_SHIFT:
