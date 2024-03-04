@@ -114,11 +114,13 @@ module control #(parameter START_ADDR = 0)
         );
         logic msb; // of word2
         logic isSortOfComparision;
+        logic swap_args;
 
         isSortOfComparision = (aluMode == BITS_32_COMPARE || aluMode == BITS_32_EQUALITY);
+        swap_args = isSortOfComparision && ~(~i_s.branch_isUnsignedOperation && signedsDecis == NEGATIVES);
 
-        alu_w1 = word1;
-        alu_w2 = word2;
+        alu_w1 = swap_args ? word2 : word1;
+        alu_w2 = swap_args ? word1 : word2;
         alu_ctrl = ctrl;
 
         need_alu = ~(aluMode == DISABLED || (opCode == BRANCH && isSortOfComparision && compare_resultKnownAndValuesNotEqual));
@@ -403,8 +405,7 @@ module control #(parameter START_ADDR = 0)
                         i_s.branch_lessMoreOperation ? BITS_32_COMPARE : BITS_32_EQUALITY,
                         decodedAluCmd.ctrl,
                         i_s.branch_isUnsignedOperation ? UNSIGNED : SIGNED,
-                        (~i_s.branch_isUnsignedOperation && signedsDecis == NEGATIVES) ? rs1 : rs2,
-                        (~i_s.branch_isUnsignedOperation && signedsDecis == NEGATIVES) ? rs2 : rs1
+                        rs1, rs2
                     );
                 end
 
