@@ -90,12 +90,12 @@ module instr_stencil
     always_comb
         if(opCode != BRANCH) // OP or OP_IMM
             unique case(riscv_aluCmd)
-                en::ADD_or_SUB: decodedAluCmd.ctrl = sub_sra_modifier ? SUB : ADD;
+                en::ADD_or_SUB: decodedAluCmd.ctrl = (opCode == OP && sub_sra_modifier) ? SUB : ADD;
                 en::SLL:  decodedAluCmd.ctrl = ADD;
                 en::SLT:  decodedAluCmd.ctrl = COMP;
                 en::SLTU: decodedAluCmd.ctrl = COMP;
                 en::XOR:  decodedAluCmd.ctrl = XOR;
-                en::SRLA: decodedAluCmd.ctrl = RSHFT; //FIXME: switch between SRL and SRA using sub_sra_modifier flag
+                en::SRLA: decodedAluCmd.ctrl = RSHFT; // Switch between SRL and SRA by using sub_sra_modifier flag
                 en::OR:   decodedAluCmd.ctrl = OR;
                 en::AND:  decodedAluCmd.ctrl = AND;
             endcase

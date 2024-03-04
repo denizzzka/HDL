@@ -352,7 +352,7 @@ module control #(parameter START_ADDR = 0)
                 begin
                     if(~i_s.is_shift_operation)
                         setAluArgs(
-                            BITS_12, ADD, SIGNED,
+                            BITS_12, decodedAluCmd.ctrl, SIGNED,
                             rs1,
                             32'(decoded.immediate_value12)
                         );

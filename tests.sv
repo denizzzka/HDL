@@ -32,6 +32,9 @@ module control_test_bench;
             '{instr: 'h_07b08293, ret_must_be: 123, ct: X5}, // addi x5, x1, 123
             '{instr: 'h_07b10293, ret_must_be: 124, ct: X5}, // addi x5, x2, 123
             '{instr: 'h_ffe10293, ret_must_be: -1, ct: X5},  // addi x5, x2, -2
+            '{instr: 'h_0163f293, ret_must_be: 'b_000010, ct: X5},  // andi x5, x7, 0x16
+            '{instr: 'h_0163e293, ret_must_be: 'b_111110, ct: X5},  // ori x5, x7, 0x16
+            '{instr: 'h_0163c293, ret_must_be: 'b_111100, ct: X5},  // xori x5, x7, 0x16
             '{instr: 'h_0081a283, ret_must_be: 'h_feff_1111, ct: X5},  // lw x5, 8(x3)
             '{instr: 'h_ff822283, ret_must_be: 'h_feff_1111, ct: X5},  // lw x5, -8(x4)
             '{instr: 'h_fe622c23, ret_must_be: 'h_cafe_babe, ct: MEM}, // sw x6, -8(x4)
