@@ -113,12 +113,15 @@ module control #(parameter START_ADDR = 0)
             input[31:0] word2
         );
         logic msb; // of word2
+        logic isSortOfComparision;
+
+        isSortOfComparision = (aluMode == BITS_32_COMPARE || aluMode == BITS_32_EQUALITY);
 
         alu_w1 = word1;
         alu_w2 = word2;
         alu_ctrl = ctrl;
 
-        need_alu = ~(aluMode == DISABLED || (opCode == BRANCH && (aluMode == BITS_32_COMPARE || aluMode == BITS_32_EQUALITY) && compare_resultKnownAndValuesNotEqual));
+        need_alu = ~(aluMode == DISABLED || (opCode == BRANCH && isSortOfComparision && compare_resultKnownAndValuesNotEqual));
         assign check_if_result_0xF = (aluMode == BITS_32_EQUALITY);
 
         unique case(aluMode)
@@ -149,7 +152,7 @@ module control #(parameter START_ADDR = 0)
             default: msb = 'x;
         endcase
 
-        word2_is_signed_and_negative = (aluMode != BITS_32_COMPARE && aluMode != BITS_32_EQUALITY && isSigned == SIGNED) && msb;
+        word2_is_signed_and_negative = ~isSortOfComparision && isSigned == SIGNED && msb;
 
     endfunction
 
