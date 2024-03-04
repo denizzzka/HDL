@@ -118,7 +118,11 @@ module control #(parameter START_ADDR = 0)
         logic swap_args;
 
         isSortOfComparision = (aluMode == BITS_12_COMPARE || aluMode == BITS_32_COMPARE || aluMode == BITS_32_EQUALITY);
-        swap_args = isSortOfComparision && (~(~i_s.branch_isUnsignedOperation && signedsDecis == NEGATIVES) || i_s.is_SLT_operation);
+
+        swap_args = isSortOfComparision;
+
+        //~ if(isSortOfComparision && i_s.is_comparison_signed_op)
+            //~ swap_args = (signedsDecis == POSITIVES);
 
         alu_w1 = swap_args ? word2 : word1;
         alu_w2 = swap_args ? word1 : word2;
@@ -129,7 +133,7 @@ module control #(parameter START_ADDR = 0)
 
         alu_ctrl = ctrl;
 
-        need_alu = ~(aluMode == DISABLED || (opCode == BRANCH && isSortOfComparision && compare_resultKnownAndValuesNotEqual));
+        need_alu = ~(aluMode == DISABLED); // || (isSortOfComparision && compare_resultKnownAndValuesNotEqual));
         assign check_if_result_0xF = (aluMode == BITS_32_EQUALITY);
 
         unique case(aluMode)
@@ -209,20 +213,24 @@ module control #(parameter START_ADDR = 0)
 
     always_comb
     begin
-        logic r;
-        r = carry_in_out;
+        logic comparison_success;
 
         if(compare_resultKnownAndValuesNotEqual)
         begin
             if(~i_s.branch_lessMoreOperation) // BEQ or BNE
-                r = 1;
-            else if(i_s.branch_isUnsignedOperation)
-                r = (signedsDecis == RS1_gt_RS2);
-            else
-                r = (signedsDecis == RS1_lt_RS2);
+                comparison_success = 0;
+            else //if(i_s.is_comparison_signed_op)
+                comparison_success = (signedsDecis == RS1_lt_RS2);
+            //~ else
+                //~ comparison_success = (signedsDecis == RS1_gt_RS2);
         end
+        else
+            comparison_success = carry_in_out; // ^ (i_s.is_comparison_signed_op && signedsDecis == NEGATIVES);
 
-        comparison_failed = r ^ i_s.branch_invertOperation;
+        if(i_s.is_SLT_operation)
+            comparison_failed = ~comparison_success;
+        else
+            comparison_failed = ~comparison_success ^ i_s.branch_invertOperation;
     end
 
     always_comb
@@ -299,6 +307,7 @@ module control #(parameter START_ADDR = 0)
         release bus_to_mem_32;
     endtask
 
+    //TODO: rename RS1_lt_RS2 -> word1_lt_word2
     typedef enum logic[1:0] {
         RS1_lt_RS2  = 'b_10, // rs1 < rs2 if signed, rs1 > rs2 if unsigned
         RS1_gt_RS2  = 'b_01, // rs1 > rs2 if signed, rs1 < rs2 if unsigned
@@ -307,7 +316,7 @@ module control #(parameter START_ADDR = 0)
     } SignedsCmpDecision;
 
     // Makes some decisions about two signed values by comparing its signs
-    wire SignedsCmpDecision signedsDecis = SignedsCmpDecision'({ rs1[31], rs2[31] });
+    wire SignedsCmpDecision signedsDecis = SignedsCmpDecision'({ alu_w1[31], alu_w2[31] });
     wire compare_resultKnownAndValuesNotEqual = (signedsDecis == RS1_lt_RS2 || signedsDecis == RS1_gt_RS2);
 
     wire[31:0] rs1 = register_file[instr.rs1];
@@ -352,7 +361,8 @@ module control #(parameter START_ADDR = 0)
                     if(~i_s.is_shift_operation)
                         setAluArgs(
                             i_s.is_SLT_operation ? BITS_12_COMPARE : BITS_12,
-                            decodedAluCmd.ctrl, SIGNED,
+                            decodedAluCmd.ctrl,
+                            i_s.is_UnsignedSLT_operation ? UNSIGNED : SIGNED,
                             rs1,
                             decoded.immediate_value12
                         );
@@ -372,7 +382,8 @@ module control #(parameter START_ADDR = 0)
                 begin
                     if(~i_s.is_shift_operation)
                         setAluArgs(
-                            BITS_32, decodedAluCmd.ctrl, UNSIGNED,
+                            i_s.is_SLT_operation ? BITS_32_COMPARE : BITS_32,
+                            decodedAluCmd.ctrl, UNSIGNED,
                             rs1, rs2
                         );
                     else

@@ -3,7 +3,7 @@ typedef enum logic[4:0] {
     SUB  =5'b11000, // carry_out is inverted for SUB operations
     XOR  =5'bx0100,
     XNOR =5'bx1100, // also NOT, if A=0
-    COMP =5'b01000, // A-B-1 operation, if A!=B then established carry out bit means A>B, otherwise A<B
+    COMP =5'b01000, // A-B-1 operation, established carry out means A>B, otherwise A<=B
     AND  =5'bx0101,
     OR   =5'bx0110,
     RSHFT=5'bx0111  // moves data2 bits to right (SLR), data1 is ignored
