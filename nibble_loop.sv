@@ -69,15 +69,10 @@ module loopOverAllNibbles
 
     assign busy = loop_perm_to_count && ~overflow;
 
-    // Support small signed word2 values
-    // For example, if 0x0 arg nibble passed it inverts it to 0xF
-    wire invert_curr_nibble = (word2_is_signed_and_negative && was_last_nibble)
-        || ctrl.ctrl.b_inv;
-
     wire AluArgs alu_args;
     wire AluRet alu_ret;
     assign alu_args.ctrl.ctrl.carry_in = carry_in_out;
-    assign alu_args.ctrl.ctrl.b_inv = invert_curr_nibble;
+    assign alu_args.ctrl.ctrl.b_inv = ctrl.ctrl.b_inv;;
     assign alu_args.ctrl.ctrl.carry_disable = ctrl.ctrl.carry_disable;
     assign alu_args.ctrl.ctrl.cmd = ctrl.ctrl.cmd;
 
@@ -217,13 +212,13 @@ module loopOverAllNibbles_test;
         preinit_result = 0;
         loop_nibbles_number = 1; // 8 bits
         word2_is_signed_and_negative = 1; // treat arg2 as signed negative value
-        loop_one_word(ADD, 32'h_0000_ffff, 32'h_0000_00ff); // w2 is 8 bit value -1
+        loop_one_word(ADD, 32'h_0000_ffff, 32'h_ffff_ffff); // w2 is 8 bit value -1
         assert(result == 65534); else $error("result=%d (%h)", $signed(result), result);
 
         preinit_result = 0;
         loop_nibbles_number = 2; // 8 bits
         word2_is_signed_and_negative = 1; // treat arg2 as signed negative value
-        loop_one_word(ADD, 32'h_0000_0000, 32'h_0000_0800); // w2 is 8 bit value -1
+        loop_one_word(ADD, 32'h_0000_0000, 32'h_ffff_f800); // w2 is 8 bit value -2048
         assert(result == -2048); else $error("result=%d (%h), reference: %h=-2048", $signed(result), result, -2048);
 
         word2_is_signed_and_negative = 0;

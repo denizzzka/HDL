@@ -121,6 +121,11 @@ module control #(parameter START_ADDR = 0)
 
         alu_w1 = swap_args ? word2 : word1;
         alu_w2 = swap_args ? word1 : word2;
+
+        msb = alu_w2[31];
+        // TODO: rename to alu_w2_is_signed_and_negative
+        word2_is_signed_and_negative = ~isSortOfComparision && isSigned == SIGNED && msb;
+
         alu_ctrl = ctrl;
 
         need_alu = ~(aluMode == DISABLED || (opCode == BRANCH && isSortOfComparision && compare_resultKnownAndValuesNotEqual));
@@ -142,19 +147,6 @@ module control #(parameter START_ADDR = 0)
         //TODO: Check is unsupported by Verilator
         //if(aluMode == BITS_12)
             //assert property(isSigned);
-
-        unique case(aluMode)
-            BITS_8: msb = word2[7];
-            BITS_12: msb = word2[11];
-            BITS_16: msb = word2[15];
-            BITS_24: msb = word2[23];
-            BITS_32,
-            BITS_32_COMPARE,
-            BITS_32_EQUALITY: msb = word2[31];
-            default: msb = 'x;
-        endcase
-
-        word2_is_signed_and_negative = ~isSortOfComparision && isSigned == SIGNED && msb;
 
     endfunction
 
@@ -345,7 +337,7 @@ module control #(parameter START_ADDR = 0)
             BRANCH_PC_CALC:
                 setAluArgs(
                     BITS_16, ADD, SIGNED, pc,
-                    { 16'b0, decoded.immediate_valueB }
+                    decoded.immediate_valueB
                 );
 
             INCR_PC_STORE: disableAlu();
@@ -453,7 +445,7 @@ module control #(parameter START_ADDR = 0)
                         // TODO: Can loop over 20 bits only and use MSB to stop. Will save a whole cycle. Implies ALU changes
                         BITS_24, ADD, SIGNED,
                         pc,
-                        { 8'b0, decoded.immediate_jump }
+                        decoded.immediate_jump
                     );
 
                 JALR:

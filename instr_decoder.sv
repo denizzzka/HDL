@@ -59,10 +59,10 @@ typedef struct packed {
 } DecodedAluCmd;
 
 typedef struct packed {
-    logic[11:0] immediate_value12;
+    logic[31:0] immediate_value12;
     logic[19:0] immediate_value20;
-    logic[23:0] immediate_jump;
-    logic[15:0] immediate_valueB;
+    logic[31:0] immediate_jump;
+    logic[31:0] immediate_valueB;
     logic isStoreFunct3msbEnabledError; // 14 bit of instruction can't be 1 for STORE instr
     logic isLoadingSignedValue;
     LoadStoreResultWidth width;
@@ -80,7 +80,7 @@ module instr_stencil
     assign decoded.isLoadingSignedValue = instr.funct3[2];
     assign decoded.width = LoadStoreResultWidth'(instr.funct3[1:0]);
     assign decoded.immediate_value20 = instr[31:12];
-    assign decoded.immediate_jump = { instr[31], instr[31], instr[31], instr[31], instr[19:12],  instr[20], instr[30:21], 1'b0 };
+    assign decoded.immediate_jump = { {12{instr[31]}}, instr[19:12],  instr[20], instr[30:21], 1'b0 };
 
     wire RiscV_Spec_BranchCmd riscv_branchCmd = RiscV_Spec_BranchCmd'(instr.funct3);
 
@@ -113,13 +113,15 @@ module instr_stencil
 
     wire is_shift_operation = (riscv_aluCmd == en::SLL || riscv_aluCmd == en::SRLA);
 
+    wire[26:0] imm12_fill = { {20{instr.funct7[6]}}, instr.funct7 };
+
     always_comb
         unique case(instr.opCode)
             LOAD,
             OP_IMM,
-            JALR: decoded.immediate_value12 = { instr.funct7, instr.rs2 };
-            STORE: decoded.immediate_value12 = { instr.funct7, instr.rd };
-            BRANCH: decoded.immediate_valueB = { instr.funct7[6], instr.funct7[6], instr.funct7[6], instr.funct7[6], instr.rd[4], instr.funct7[5:0], instr.rd[4:1], 1'b0 }; //TODO: brrr!
+            JALR: decoded.immediate_value12 = { imm12_fill, instr.rs2 };
+            STORE: decoded.immediate_value12 = { imm12_fill, instr.rd };
+            BRANCH: decoded.immediate_valueB = { {20{instr.funct7[6]}}, instr.rd[4], instr.funct7[5:0], instr.rd[4:1], 1'b0 };
             default: decoded.immediate_value12 = 'h_ded; /* FIXME: add handling for unknown opcodes */
         endcase
 
