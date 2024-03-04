@@ -505,18 +505,8 @@ module control #(parameter START_ADDR = 0)
             end
             INSTR_PROCESS:
             begin
-                // Short cycle, like as for LUI instruction // TODO: remove this condition?
-                if(
-                    nextState == INSTR_FETCH ||
-                    nextState == INCR_PC_PRELOAD ||
-                    nextState == PREP_NEXT_SHIFT ||
-                    nextState == BRANCH_PC_PRELOAD
-                )
-                begin
-                    if(~alu_busy)
-                        register_file[instr.rd] <= (opCode != LUI) ? alu_result : { decoded.immediate_value20, 12'b0 };
-                end
-
+                if(~alu_busy)
+                    register_file[instr.rd] <= (opCode != LUI) ? alu_result : { decoded.immediate_value20, 12'b0 };
             end
             INSTR_BRANCH: pc <= alu_result;
             PREP_NEXT_SHIFT:
