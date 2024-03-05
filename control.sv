@@ -133,7 +133,8 @@ module control #(parameter START_ADDR = 0)
 
         alu_ctrl = ctrl;
 
-        need_alu = ~(aluMode == DISABLED); // || (isSortOfComparision && compare_resultKnownAndValuesNotEqual));
+        compare_resultKnownAndValuesNotEqual = (word1[31] != word2[31]);
+        need_alu = ~(aluMode == DISABLED || (isSortOfComparision && compare_resultKnownAndValuesNotEqual));
         assign check_if_result_0xF = (aluMode == BITS_32_EQUALITY);
 
         unique case(aluMode)
@@ -217,12 +218,12 @@ module control #(parameter START_ADDR = 0)
 
         if(compare_resultKnownAndValuesNotEqual)
         begin
-            if(~i_s.branch_lessMoreOperation) // BEQ or BNE
+            if(opCode == BRANCH && ~i_s.branch_lessMoreOperation) // BEQ or BNE
                 comparison_success = 0;
-            else //if(i_s.is_comparison_signed_op)
-                comparison_success = (signedsDecis == RS1_lt_RS2);
-            //~ else
-                //~ comparison_success = (signedsDecis == RS1_gt_RS2);
+            else if(~i_s.is_comparison_signed_op)
+                comparison_success = (signedsDecis == RS1_lt_RS2); //TODO can be checked only one bit here
+            else
+                comparison_success = ~(signedsDecis == RS1_lt_RS2);
         end
         else
             comparison_success = carry_in_out; // ^ (i_s.is_comparison_signed_op && signedsDecis == NEGATIVES);
@@ -307,7 +308,7 @@ module control #(parameter START_ADDR = 0)
         release bus_to_mem_32;
     endtask
 
-    //TODO: rename RS1_lt_RS2 -> word1_lt_word2
+    //TODO: rename RS1_lt_RS2 -> aluW1_lt_aluW2?
     typedef enum logic[1:0] {
         RS1_lt_RS2  = 'b_10, // rs1 < rs2 if signed, rs1 > rs2 if unsigned
         RS1_gt_RS2  = 'b_01, // rs1 > rs2 if signed, rs1 < rs2 if unsigned
@@ -317,7 +318,7 @@ module control #(parameter START_ADDR = 0)
 
     // Makes some decisions about two signed values by comparing its signs
     wire SignedsCmpDecision signedsDecis = SignedsCmpDecision'({ alu_w1[31], alu_w2[31] });
-    wire compare_resultKnownAndValuesNotEqual = (signedsDecis == RS1_lt_RS2 || signedsDecis == RS1_gt_RS2);
+    logic compare_resultKnownAndValuesNotEqual;
 
     wire[31:0] rs1 = register_file[instr.rs1];
     wire[31:0] rs2 = register_file[instr.rs2];
@@ -519,7 +520,7 @@ module control #(parameter START_ADDR = 0)
                     if(opCode == LUI)
                         register_file[instr.rd] <= { decoded.immediate_value20, 12'b0 };
                     else if(i_s.is_SLT_operation)
-                        register_file[instr.rd] <= carry_in_out ? 1 : 0;
+                        register_file[instr.rd] <= comparison_failed ? 0 : 1;
                     else
                         register_file[instr.rd] <= alu_result;
             end
