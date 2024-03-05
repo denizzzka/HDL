@@ -277,6 +277,7 @@ module control #(parameter START_ADDR = 0)
                         JAL: alu_preinit_result = pc;
                         JALR: alu_preinit_result = register_file[instr.rs1];
                         OP_IMM, OP: alu_preinit_result = i_s.is_shift_operation ? rs1 : 0;
+                        LOAD, STORE: alu_preinit_result = rs1;
                         default: alu_preinit_result = 0;
                     endcase
             end
@@ -414,21 +415,12 @@ module control #(parameter START_ADDR = 0)
                     );
                 end
 
-                LOAD: begin
-                    unique case(decoded.width)
-                        // FIXME: signed flag must be obtained from funct3
-                        BITS32: begin
-                            // Calc mem address:
-                            setAluArgs(
-                                BITS_12, ADD, SIGNED,
-                                register_file[instr.rs1],
-                                32'(decoded.immediate_value12)
-                            );
-                        end
-
-                        default: begin end // FIXME: remove this line
-                    endcase
-                end
+                LOAD:
+                    setAluArgs(
+                        BITS_12, ADD, SIGNED,
+                        register_file[instr.rs1],
+                        decoded.immediate_value12
+                    );
 
                 STORE: begin
                     unique case(decoded.width)
@@ -530,7 +522,15 @@ module control #(parameter START_ADDR = 0)
                 // places MSB for arithmetic shifts (TODO: duplicates code from INCR_PC_STORE)
                 carry_in_out <= i_s.sub_sra_modifier && rs1[31];
             end
-            READ_MEMORY: register_file[instr.rd] <= bus_from_mem_32;
+            READ_MEMORY:
+            begin
+                unique case(decoded.width)
+                    BITS32: register_file[instr.rd] <= bus_from_mem_32;
+                    BITS16: register_file[instr.rd] <= { {16{ decoded.isLoadingUnsignedValue ? 1'b0 : bus_from_mem_32[15] }}, bus_from_mem_32[15:0] };
+                    BITS8: register_file[instr.rd] <=  { {24{ decoded.isLoadingUnsignedValue ? 1'b0 : bus_from_mem_32[7]  }}, bus_from_mem_32[7:0] };
+                    ERRVAL: register_file[instr.rd] <= 'h_deaddead; // FIXME: error processing
+                endcase
+            end
             WRITE_MEMORY: begin end
             ERROR: begin end
         endcase

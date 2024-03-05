@@ -63,7 +63,7 @@ typedef struct packed {
     logic[31:0] immediate_jump;
     logic[31:0] immediate_valueB;
     logic isStoreFunct3msbEnabledError; // 14 bit of instruction can't be 1 for STORE instr
-    logic isLoadingSignedValue;
+    logic isLoadingUnsignedValue;
     LoadStoreResultWidth width;
 } WiredDecisions;
 
@@ -76,7 +76,7 @@ module instr_stencil
     );
 
     assign opCode = instr.opCode;
-    assign decoded.isLoadingSignedValue = instr.funct3[2];
+    assign decoded.isLoadingUnsignedValue = instr.funct3[2];
     assign decoded.width = LoadStoreResultWidth'(instr.funct3[1:0]);
     assign decoded.immediate_value20 = instr[31:12];
     assign decoded.immediate_jump = { {12{instr[31]}}, instr[19:12],  instr[20], instr[30:21], 1'b0 };
@@ -108,7 +108,7 @@ module instr_stencil
     wire branch_isUnsignedOperation = (opCode == BRANCH) && riscv_branchCmd[1];
     wire branch_lessMoreOperation = (opCode == BRANCH) && riscv_branchCmd[2];
 
-    wire is_shift_operation = (riscv_aluCmd == en::SLL || riscv_aluCmd == en::SRLA);
+    wire is_shift_operation = (opCode == OP_IMM || opCode == OP) && (riscv_aluCmd == en::SLL || riscv_aluCmd == en::SRLA);
 
     wire is_SLT_operation = (opCode != BRANCH && (opCode == OP_IMM || opCode == OP) && riscv_aluCmd[2:1] == 'b_01);
     wire is_UnsignedSLT_operation = is_SLT_operation && riscv_aluCmd[0];

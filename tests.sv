@@ -52,6 +52,11 @@ module control_test_bench;
             '{instr: 'h_0163c293, ret_must_be: 'b_111100, ct: X5},  // xori x5, x7, 0x16
             '{instr: 'h_0081a283, ret_must_be: 'h_feff_1111, ct: X5},  // lw x5, 8(x3)
             '{instr: 'h_ff822283, ret_must_be: 'h_feff_1111, ct: X5},  // lw x5, -8(x4)
+            '{instr: 'h_ff826283, ret_must_be: 'h_feff_1111, ct: X5},  // lwu x5, -8(x4) // not supported by RV32I standard
+            '{instr: 'h_0091d283, ret_must_be: 'h_0000_ff11, ct: X5},  // lhu x5, 9(x3)
+            '{instr: 'h_00919283, ret_must_be: 'h_ffff_ff11, ct: X5},  // lh x5, 9(x3)
+            '{instr: 'h_00b1c283, ret_must_be: 'h_0000_00fe, ct: X5},  // lbu x5, 11(x3)
+            '{instr: 'h_00b18283, ret_must_be: 'h_ffff_fffe, ct: X5},  // lb x5, 11(x3)
             '{instr: 'h_fe622c23, ret_must_be: 'h_cafe_babe, ct: MEM}, // sw x6, -8(x4)
             '{instr: 'h_fffff2b7, ret_must_be: 'h_fffff000, ct: X5},   // lui x5, 0xfffff
             '{instr: 'h_ffff0297, ret_must_be: start_addr + (-16 << 12), ct: X5},  // auipc x5, -16
