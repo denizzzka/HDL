@@ -314,6 +314,7 @@ module control #(parameter START_ADDR = 0)
     } SignedsCmpDecision;
 
     // Makes some decisions about two signed values by comparing its signs
+    //TODO: use rs1 and rs2 here instead of ALU wires? To decrease comb logic path length
     wire SignedsCmpDecision signedsDecis = SignedsCmpDecision'({ alu_w1[31], alu_w2[31] });
     logic compare_resultKnownAndValuesNotEqual;
 
