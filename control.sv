@@ -121,9 +121,6 @@ module control #(parameter START_ADDR = 0)
 
         swap_args = isSortOfComparision;
 
-        //~ if(isSortOfComparision && i_s.is_comparison_signed_op)
-            //~ swap_args = (signedsDecis == POSITIVES);
-
         alu_w1 = swap_args ? word2 : word1;
         alu_w2 = swap_args ? word1 : word2;
 
