@@ -418,23 +418,14 @@ module control #(parameter START_ADDR = 0)
                 LOAD:
                     setAluArgs(
                         BITS_12, ADD, SIGNED,
-                        register_file[instr.rs1],
-                        decoded.immediate_value12
+                        rs1, decoded.immediate_value12
                     );
 
                 STORE: begin
-                    unique case(decoded.width)
-                        BITS32: begin
-                            // Calc mem address:
-                            setAluArgs(
-                                BITS_12, ADD, SIGNED,
-                                register_file[instr.rs1],
-                                32'(decoded.immediate_value12)
-                            );
-                        end
-
-                        default: begin end // FIXME: remove this line
-                    endcase
+                    setAluArgs(
+                        BITS_12, ADD, SIGNED,
+                        rs1, decoded.immediate_value12
+                    );
                 end
 
                 default: begin // FIXME: remove this line
@@ -480,7 +471,13 @@ module control #(parameter START_ADDR = 0)
             WRITE_MEMORY:
             begin
                 disableAlu();
-                prepareMemWrite(alu_result, register_file[instr.rs2]);
+
+                unique case(decoded.width)
+                    BITS32: prepareMemWrite(alu_result, rs2);
+                    BITS16: prepareMemWrite(alu_result, {{16{1'b0}}, rs2[15:0]});
+                    BITS8:  prepareMemWrite(alu_result, {{24{1'b0}}, rs2[7:0]});
+                    ERRVAL: prepareMemWrite(alu_result, 'h_deaddead); // FIXME: error processing
+                endcase
             end
         endcase
 
