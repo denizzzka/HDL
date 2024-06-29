@@ -4,6 +4,7 @@ set -euxo pipefail
 sv_files=(
     tests.sv
     alu.sv
+    full_adder.sv
     carry_gen.sv
     instr_decoder.sv
     nibble_loop.sv
