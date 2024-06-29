@@ -1,18 +1,20 @@
 module full_adder
     (
         input data1, data2, carry_in, direct_in /*can be bypassed to output*/,
-        input AluCtrlInternal ctrl,
+        input wire carry_disable,
+        input wire b_inv,
+        logic[1:0] cmd, //TODO: typedef it?
         output ret, gen, propagate, d2_possible_inverted
     );
 
-    assign d2_possible_inverted = data2 ^ ctrl.b_inv; // optionally inverts data2
-    wire carry = carry_in & ~ctrl.carry_disable;
+    assign d2_possible_inverted = data2 ^ b_inv; // optionally inverts data2
+    wire carry = carry_in & ~carry_disable;
 
     assign gen = data1 & d2_possible_inverted;
     assign propagate = data1 | d2_possible_inverted;
 
     wire i;
-    AND_gate_with_mux mux(gen, propagate, direct_in, ctrl.cmd, i);
+    AND_gate_with_mux mux(gen, propagate, direct_in, cmd, i);
 
     assign ret = i ^ carry;
 endmodule
@@ -41,7 +43,12 @@ module full_adder_test;
     AluCtrl ctrl;
     wire ret, gen, propagate, d2_possible_inverted;
 
-    full_adder a(.*);
+    full_adder a(
+        .b_inv(ctrl.ctrl.b_inv),
+        .carry_disable(ctrl.ctrl.carry_disable),
+        .cmd(ctrl.ctrl.cmd),
+        .*
+    );
 
     initial begin
         ctrl.ctrl.b_inv = 0;
