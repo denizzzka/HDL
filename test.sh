@@ -8,6 +8,7 @@ sv_files=(
     nibble_loop.sv
     shift_loop.sv
     ram.sv
+    #~ register_file.sv
     control.sv
 )
 
