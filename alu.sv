@@ -42,40 +42,25 @@ module alu
         output AluRet ret
     );
 
-    wire[3:0] gen;
-    wire[3:0] propagate;
-    wire[4:0] d2_possible_inverted;
-    wire[4:0] carry;
-
     wire carry_in = args.ctrl.ctrl.carry_in;
 
-    carry_gen cg(
-        .carry_in,
-        .gen,
-        .prop(propagate),
-        .carry(carry[3:1]),
-        .gen_out(ret.carry_out)
-    );
-
+    wire[4:0] carry;
     assign carry[0] = carry_in;
-    assign d2_possible_inverted[3:0] = args.d2 ^ {4{args.ctrl.ctrl.b_inv}}; // optionally inverts data2
-    assign d2_possible_inverted[4] = carry_in; // used for shift
 
-    for(genvar i = 0; i < 4; i++) begin
-        wire right_bit = d2_possible_inverted[i+1];
+    wire[3:0] d2_possible_inverted = args.d2 ^ {4{args.ctrl.ctrl.b_inv}}; // optionally inverts data2
 
-        full_adder fa(
-            .data1(args.d1[i]),
-            .data2(d2_possible_inverted[i]),
-            .carry_in(carry[i]),
-            .direct_in(right_bit),
-            .carry_disable(args.ctrl.ctrl.carry_disable),
-            .cmd(args.ctrl.ctrl.cmd),
-            .ret(ret.res[i]),
-            .gen(gen[i]),
-            .propagate(propagate[i])
-        );
-    end
+    wire Alu4bitArgs args4b;
+    assign args4b.d1 = args.d1;
+    assign args4b.d2 = d2_possible_inverted[3:0];
+
+    alu_4bit a4b(
+        .args(args4b),
+        .carry_in,
+        .carry_disable(args.ctrl.ctrl.carry_disable),
+        .cmd(args.ctrl.ctrl.cmd),
+        .res(ret.res),
+        .carry_out(ret.carry_out)
+    );
 endmodule
 
 // Usable for immediate A==B compare during A-B-1 operation
