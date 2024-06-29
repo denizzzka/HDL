@@ -20,8 +20,10 @@ module alu_4bit
     wire[3:0] internal_gen;
     wire[3:0] internal_prop;
 
+    wire[4:0] withLeftBit = { carry_in, args.d2 };
+
     for(genvar i = 0; i < 4; i++) begin
-        wire left_bit = args.d2[i+1]; // used for right shift operation
+        wire left_bit = withLeftBit[i+1]; // used for right shift operation
 
         full_adder fa(
             .data1(args.d1[i]),
