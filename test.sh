@@ -3,8 +3,8 @@ set -euxo pipefail
 
 sv_files=(
     tests.sv
-    alu.sv
     alu_4bit.sv
+    alu.sv
     full_adder.sv
     carry_gen.sv
     instr_decoder.sv

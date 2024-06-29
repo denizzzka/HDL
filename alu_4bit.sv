@@ -6,7 +6,7 @@ typedef struct packed
 
 module alu_4bit
     (
-        input AluArgs args,
+        input Alu4bitArgs args,
         input wire carry_in,
         input wire carry_disable,
         logic[1:0] cmd, // cmd for full adder mux switch
@@ -21,7 +21,7 @@ module alu_4bit
     wire[3:0] internal_prop;
 
     for(genvar i = 0; i < 4; i++) begin
-        wire left_bit = d2[i+1]; // used for right shift operation
+        wire left_bit = args.d2[i+1]; // used for right shift operation
 
         full_adder fa(
             .data1(args.d1[i]),
@@ -29,7 +29,7 @@ module alu_4bit
             .carry_in(carry[i]),
             .carry_disable(carry_disable),
             .direct_in(left_bit),
-            .cmd(args.ctrl.ctrl.cmd),
+            .cmd,
             .gen(internal_gen[i]),
             .propagate(internal_prop[i]),
             .ret(res[i])
