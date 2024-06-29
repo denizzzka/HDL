@@ -48,8 +48,16 @@ module alu
     wire[4:0] carry;
 
     wire carry_in = args.ctrl.ctrl.carry_in;
+
+    carry_gen cg(
+        .carry_in,
+        .gen,
+        .prop(propagate),
+        .carry(carry[3:1]),
+        .gen_out(ret.carry_out)
+    );
+
     assign carry[0] = carry_in;
-    assign ret.carry_out = carry[4];
     assign d2_possible_inverted[4] = carry_in;
 
     for(genvar i = 0; i < 4; i++) begin
@@ -67,27 +75,6 @@ module alu
             .d2_possible_inverted(d2_possible_inverted[i])
         );
     end
-
-    assign carry[1] = gen[0] ||
-            (carry_in && propagate[0]);
-
-    assign carry[2] = gen[1] || (
-            (carry_in && propagate[0] && propagate[1]) ||
-            (gen[0] && propagate[1])
-        );
-
-    assign carry[3] = gen[2] || (
-            (carry_in && propagate[0] && propagate[1] && propagate[2]) ||
-            (gen[0] && propagate[1] && propagate[2]) ||
-            (gen[1] && propagate[2])
-        );
-
-    assign carry[4] = gen[3] || (
-            (carry_in && propagate[0] && propagate[1] && propagate[2] && propagate[3]) ||
-            (gen[0] && propagate[1] && propagate[2] && propagate[3]) ||
-            (gen[1] && propagate[2] && propagate[3]) ||
-            (gen[2] && propagate[3])
-        );
 endmodule
 
 // Usable for immediate A==B compare during A-B-1 operation
