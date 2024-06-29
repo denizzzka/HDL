@@ -6,7 +6,7 @@ module carry_gen
         input wire[3:0] gen,
         input wire[3:0] prop,
         output wire[2:0] carry,
-        output wire gen_out // AKA carry out
+        output wire gen_out // AKA carry out, TODO: try to create two wires, one another is carry[3]
     );
 
     assign carry[0] = gen[0] ||
