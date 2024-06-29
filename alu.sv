@@ -58,23 +58,22 @@ module alu
     );
 
     assign carry[0] = carry_in;
-    assign d2_possible_inverted[4] = carry_in;
+    assign d2_possible_inverted[3:0] = args.d2 ^ {4{args.ctrl.ctrl.b_inv}}; // optionally inverts data2
+    assign d2_possible_inverted[4] = carry_in; // used for shift
 
     for(genvar i = 0; i < 4; i++) begin
         wire right_bit = d2_possible_inverted[i+1];
 
         full_adder fa(
             .data1(args.d1[i]),
-            .data2(args.d2[i]),
+            .data2(d2_possible_inverted[i]),
             .carry_in(carry[i]),
             .direct_in(right_bit),
             .carry_disable(args.ctrl.ctrl.carry_disable),
-            .b_inv(args.ctrl.ctrl.b_inv),
             .cmd(args.ctrl.ctrl.cmd),
             .ret(ret.res[i]),
             .gen(gen[i]),
-            .propagate(propagate[i]),
-            .d2_possible_inverted(d2_possible_inverted[i])
+            .propagate(propagate[i])
         );
     end
 endmodule
