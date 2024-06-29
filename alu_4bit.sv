@@ -14,7 +14,7 @@ module alu_4bit
         output wire carry_out
     );
 
-    wire[4:0] carry;
+    wire[3:0] carry;
     assign carry[0] = carry_in;
 
     wire[3:0] internal_gen;
