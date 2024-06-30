@@ -1,6 +1,7 @@
 module tests;
     full_adder_test fa;
     alu_test a;
+    alu_4bit_test a4;
     alu16_test a16;
     loopOverAllNibbles_test lan;
     shift_loop_test sh;
