@@ -17,18 +17,17 @@ module alu_16bit
     wire[3:0] carry;
     assign carry[0] = carry_in;
 
-    wire[3:0] rshift_carry;
-    assign rshift_carry[0] = args.d2[4];
-    assign rshift_carry[1] = args.d2[8];
-    assign rshift_carry[2] = args.d2[12];
-    assign rshift_carry[3] = carry_in;
-
-    wire isRShiftOP = (carry_disable && cmd == 'b11);
-
     wire[3:0] gen;
     wire[3:0] prop;
 
+    wire isRShiftOP = (carry_disable && cmd == 'b11);
+
+    wire[4:0] rshift_carry;
+    wire[16:0] withLeftBit = { carry_in, args.d2 };
+
     for(genvar i = 0; i < 16; i+=4) begin
+        assign rshift_carry[i/4] = withLeftBit[i+4];
+
         wire Alu4bitArgs args4b;
         assign args4b.d1 = args.d1[i+3:i];
         assign args4b.d2 = args.d2[i+3:i];
