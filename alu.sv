@@ -53,11 +53,14 @@ module alu
     assign args4b.d1 = args.d1;
     assign args4b.d2 = d2_possible_inverted[3:0];
 
+    wire[3:0] unused_propagate;
+
     alu_4bit a4b(
         .args(args4b),
         .carry_in,
         .carry_disable(args.ctrl.ctrl.carry_disable),
         .cmd(args.ctrl.ctrl.cmd),
+        .internal_propagate(unused_propagate),
         .res(ret.res),
         .carry_out(ret.carry_out)
     );
