@@ -9,36 +9,32 @@ module alu
     wire[4:0] carry;
     assign carry[0] = carry_in;
 
-    wire[3:0] d2_possible_inverted = args.d2 ^ {4{args.ctrl.ctrl.b_inv}}; // optionally inverts data2
+    wire Alu16bitArgs internalArgs;
+    assign internalArgs.d1 = args.d1;
+    // optionally inverts data2
+    assign internalArgs.d2 = args.d2 ^ { $bits(args.d2) {args.ctrl.ctrl.b_inv} };
 
-    wire Alu4bitArgs args4b;
-    assign args4b.d1 = args.d1;
-    assign args4b.d2 = d2_possible_inverted[3:0];
-
-    wire[3:0] unused_propagate;
-
-    alu_4bit a4b(
-        .args(args4b),
+    alu_16bit a(
+        .args(internalArgs),
         .carry_in,
         .carry_disable(args.ctrl.ctrl.carry_disable),
         .cmd(args.ctrl.ctrl.cmd),
-        .internal_propagate(unused_propagate),
         .res(ret.res),
         .carry_out(ret.carry_out)
     );
 endmodule
 
 // Usable for immediate A==B compare during A-B-1 operation
-module check_if_0xF (input [3:0] in, output ret);
-    assign ret = (in == 'hf);
+module check_if_0xF (input AluVal in, output ret);
+    assign ret = (in == { $bits(in) {1'b1} });
 endmodule
 
 module alu_test;
     wire AluArgs args;
     wire AluRet ret;
 
-    logic[3:0] d1;
-    logic[3:0] d2;
+    AluVal d1;
+    AluVal d2;
     assign args.d1 = d1;
     assign args.d2 = d2;
 
@@ -49,7 +45,7 @@ module alu_test;
     AluCtrl ctrl;
     assign args.ctrl = ctrl;
 
-    wire[3:0] res = ret.res;
+    wire AluVal res = ret.res;
 
     alu a(.*);
     check_if_0xF res_chk(res, res_is_0xF);
