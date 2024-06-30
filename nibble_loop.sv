@@ -112,7 +112,8 @@ module loopOverAllNibbles_test;
 
     logic clk;
     logic loop_perm_to_count;
-    logic[2:0] loop_nibbles_number;
+    //~ logic[2:0] loop_nibbles_number;
+    logic[0:0] loop_nibbles_number;
     AluCtrl ctrl;
     logic carry_in_out;
     logic check_if_result_0xF;
@@ -124,7 +125,7 @@ module loopOverAllNibbles_test;
     logic[31:0] result;
     wire busy;
 
-    loopOverAllNibbles #(3) l(.*);
+    loopOverAllNibbles #(1) l(.*);
 
     AluCtrl rshft;
 
@@ -190,12 +191,14 @@ module loopOverAllNibbles_test;
         assert(result == 'h_ff0008); else $error("result=%h", result);
 
         preinit_result = 'h_0000_0000;
-        loop_nibbles_number = 2;
+        //~ loop_nibbles_number = 2;
+        loop_nibbles_number = 0;
         loop_one_word(ADD, 0, 'h_07b);
         assert(result == 'h_07b); else $error("result=%h", result);
 
         preinit_result = 'h_f000_0000;
-        loop_nibbles_number = 'b111;
+        //~ loop_nibbles_number = 'b111;
+        loop_nibbles_number = 1;
 
         loop_one_word(ADD, 'h_0eff_ffff, 1);
         assert(result == 'h_0f00_0000); else $error("result=%h", result);
@@ -206,20 +209,22 @@ module loopOverAllNibbles_test;
         loop_one_word(ADD, 'h_0000_0002, -3);
         assert(result == -1); else $error("result=%d", $signed(result));
 
-        loop_nibbles_number = 3;
+        //~ loop_nibbles_number = 3;
+        loop_nibbles_number = 1;
         loop_one_word(ADD, 'h_0000_0001, 32'(12'(-2)));
         assert(12'(result) == 12'(-1)); else $error("result=%d", $signed(12'(result)));
 
         preinit_result = 0;
-        loop_nibbles_number = 1; // 8 bits
+        loop_nibbles_number = 0; // 16-bits
         word2_is_signed_and_negative = 1; // treat arg2 as signed negative value
-        loop_one_word(ADD, 32'h_0000_ffff, 32'h_ffff_ffff); // w2 is 8 bit value -1
+        loop_one_word(ADD, 32'h_0000_ffff, 32'h_ffff_ffff); // w2 is 16-bit value -1
         assert(result == 65534); else $error("result=%d (%h)", $signed(result), result);
 
         preinit_result = 0;
-        loop_nibbles_number = 2; // 8 bits
+        //~ loop_nibbles_number = 2; // 8 bits
+        loop_nibbles_number = 0; // 16 bits
         word2_is_signed_and_negative = 1; // treat arg2 as signed negative value
-        loop_one_word(ADD, 32'h_0000_0000, 32'h_ffff_f800); // w2 is 8 bit value -2048
+        loop_one_word(ADD, 32'h_0000_0000, 32'h_ffff_f800); // w2 is 16 bit value -2048
         assert(result == -2048); else $error("result=%d (%h), reference: %h=-2048", $signed(result), result, -2048);
 
         word2_is_signed_and_negative = 0;
@@ -227,7 +232,8 @@ module loopOverAllNibbles_test;
         loop_one_word(ADD, 'h_0000_0aff, 1);
         assert(result == 'h_0000_0b00); else $error("result=%h", result);
 
-        loop_nibbles_number = 'b111;
+        //~ loop_nibbles_number = 'b111;
+        loop_nibbles_number = 1;
 
         rshft.cmd = RSHFT;
         rshft.ctrl.carry_in = 0;
