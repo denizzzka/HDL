@@ -76,7 +76,10 @@ module control #(parameter START_ADDR = 0)
 
     instr_stencil i_s(.*);
 
-    `ifndef ALU_4BIT
+    `ifdef ALU_BITS_WIDTH_4
+        localparam NIBBLES_NUM_WIDTH = 3;
+    `endif
+    `ifdef ALU_BITS_WIDTH_16
         localparam NIBBLES_NUM_WIDTH = 1;
     `endif
 
@@ -138,7 +141,7 @@ module control #(parameter START_ADDR = 0)
         need_alu = ~(aluMode == DISABLED || (isSortOfComparision && compare_resultKnownAndValuesNotEqual));
         assign check_if_result_0xF = (aluMode == BITS_32_EQUALITY);
 
-        `ifdef ALU_4BIT
+        `ifdef ALU_BITS_WIDTH_4
             unique case(aluMode)
                 DISABLED: loop_nibbles_number = 7; // 7 is for RSHFT preinit
                 INCREMENT: loop_nibbles_number = 0;
@@ -151,7 +154,8 @@ module control #(parameter START_ADDR = 0)
                 BITS_32_COMPARE,
                 BITS_32_EQUALITY: loop_nibbles_number = 7;
             endcase
-        `else // ALU_16BIT
+        `endif
+        `ifdef ALU_BITS_WIDTH_16
             unique case(aluMode)
                 DISABLED: loop_nibbles_number = 1; // maximum for RSHFT preinit
                 INCREMENT,
@@ -188,7 +192,7 @@ module control #(parameter START_ADDR = 0)
 
     wire enable_preinit_only_for_shift = (currState == INCR_PC_STORE && i_s.is_shift_operation);
 
-    loopOverAllNibbles #(1) l(
+    loopOverAllNibbles #(NIBBLES_NUM_WIDTH) l(
         .clk,
         .loop_perm_to_count(alu_perm_to_count),
         .ctrl(alu_ctrl),

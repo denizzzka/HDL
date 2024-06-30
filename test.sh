@@ -17,6 +17,9 @@ sv_files=(
 )
 
 VERILATOR_ROOT=~/Dev/verilator/ \
-~/Dev/verilator/bin/verilator +1800-2017ext+sv --assert --cc --build --exe --main --timing --trace --top-module tests "${sv_files[@]}"
+~/Dev/verilator/bin/verilator +1800-2017ext+sv --assert --cc --build --exe --main --timing --trace \
+--top-module tests \
+-DALU_BITS_WIDTH_16 \
+"${sv_files[@]}"
 
 ./obj_dir/Vtests
