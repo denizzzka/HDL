@@ -6,8 +6,8 @@ module tests;
     loopOverAllNibbles_test lan;
     shift_loop_test sh;
     Ram_test r;
-    control_test c;
     control_test_bench tb;
+    control_test c;
 endmodule
 
 // TODO: implement tests for all instructions

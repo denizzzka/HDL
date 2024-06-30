@@ -76,7 +76,11 @@ module control #(parameter START_ADDR = 0)
 
     instr_stencil i_s(.*);
 
-    logic[2:0] loop_nibbles_number;
+    `ifndef ALU_4BIT
+        localparam NIBBLES_NUM_WIDTH = 1;
+    `endif
+
+    logic[NIBBLES_NUM_WIDTH-1:0] loop_nibbles_number;
     AluCtrl alu_ctrl;
     logic carry_in_out;
     logic check_if_result_0xF;
@@ -134,18 +138,33 @@ module control #(parameter START_ADDR = 0)
         need_alu = ~(aluMode == DISABLED || (isSortOfComparision && compare_resultKnownAndValuesNotEqual));
         assign check_if_result_0xF = (aluMode == BITS_32_EQUALITY);
 
-        unique case(aluMode)
-            DISABLED: loop_nibbles_number = 7; // 7 is for RSHFT preinit
-            INCREMENT: loop_nibbles_number = 0;
-            BITS_8: loop_nibbles_number = 1;
-            BITS_12,
-            BITS_12_COMPARE: loop_nibbles_number = 2;
-            BITS_16: loop_nibbles_number = 3;
-            BITS_24: loop_nibbles_number = 5;
-            BITS_32,
-            BITS_32_COMPARE,
-            BITS_32_EQUALITY: loop_nibbles_number = 7;
-        endcase
+        `ifdef ALU_4BIT
+            unique case(aluMode)
+                DISABLED: loop_nibbles_number = 7; // 7 is for RSHFT preinit
+                INCREMENT: loop_nibbles_number = 0;
+                BITS_8: loop_nibbles_number = 1;
+                BITS_12,
+                BITS_12_COMPARE: loop_nibbles_number = 2;
+                BITS_16: loop_nibbles_number = 3;
+                BITS_24: loop_nibbles_number = 5;
+                BITS_32,
+                BITS_32_COMPARE,
+                BITS_32_EQUALITY: loop_nibbles_number = 7;
+            endcase
+        `else // ALU_16BIT
+            unique case(aluMode)
+                DISABLED: loop_nibbles_number = 1; // maximum for RSHFT preinit
+                INCREMENT,
+                BITS_8,
+                BITS_12,
+                BITS_12_COMPARE,
+                BITS_16: loop_nibbles_number = 0;
+                BITS_24,
+                BITS_32,
+                BITS_32_COMPARE,
+                BITS_32_EQUALITY: loop_nibbles_number = 1;
+            endcase
+        `endif
 
         // Immediate values always signed
         //TODO: Check is unsupported by Verilator
@@ -169,7 +188,7 @@ module control #(parameter START_ADDR = 0)
 
     wire enable_preinit_only_for_shift = (currState == INCR_PC_STORE && i_s.is_shift_operation);
 
-    loopOverAllNibbles #(3) l(
+    loopOverAllNibbles #(1) l(
         .clk,
         .loop_perm_to_count(alu_perm_to_count),
         .ctrl(alu_ctrl),
