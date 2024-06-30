@@ -5,6 +5,7 @@ sv_files=(
     tests.sv
     alu_4bit.sv
     alu.sv
+    alu_16bit.sv
     full_adder.sv
     carry_gen.sv
     instr_decoder.sv
