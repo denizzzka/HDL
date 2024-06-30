@@ -109,7 +109,7 @@ module loopOverAllNibbles
 
 endmodule
 
-module loopOverAllNibbles_test;
+module loopOverAllNibbles_test #(parameter ALU_BITS_WIDTH);
     localparam RSH_VAL = 32'h_0600_0000;
 
     logic clk;
@@ -127,7 +127,7 @@ module loopOverAllNibbles_test;
     logic[31:0] result;
     wire busy;
 
-    loopOverAllNibbles #(16) l(.*);
+    loopOverAllNibbles #(ALU_BITS_WIDTH) l(.*);
 
     AluCtrl rshft;
 

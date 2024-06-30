@@ -3,7 +3,7 @@ module tests;
     alu_test a;
     alu_4bit_test a4;
     alu16_test a16;
-    loopOverAllNibbles_test lan;
+    loopOverAllNibbles_test#(.ALU_BITS_WIDTH(16)) lan;
     shift_loop_test sh;
     Ram_test r;
     control_test_bench tb;
