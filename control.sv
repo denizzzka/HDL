@@ -192,7 +192,7 @@ module control #(parameter START_ADDR = 0)
 
     wire enable_preinit_only_for_shift = (currState == INCR_PC_STORE && i_s.is_shift_operation);
 
-    loopOverAllNibbles #(NIBBLES_NUM_WIDTH) l(
+    loopOverAllNibbles #(16) l(
         .clk,
         .loop_perm_to_count(alu_perm_to_count),
         .ctrl(alu_ctrl),

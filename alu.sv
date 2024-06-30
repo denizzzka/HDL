@@ -1,7 +1,25 @@
+class aluParams #(parameter ALU_BITS_WIDTH);
+    typedef logic[ALU_BITS_WIDTH-1:0] AluVal;
+
+    typedef struct packed
+    {
+        AluVal d1;
+        AluVal d2;
+        AluCtrl ctrl;
+    } AluArgs;
+
+    typedef struct packed
+    {
+        logic carry_out;
+        AluVal res;
+    } AluRet;
+endclass
+
 module alu
+    #(parameter ALU_BITS_WIDTH)
     (
-        input AluArgs args,
-        output AluRet ret
+        input aluParams#(ALU_BITS_WIDTH)::AluArgs args,
+        output aluParams#(ALU_BITS_WIDTH)::AluRet ret
     );
 
     wire carry_in = args.ctrl.ctrl.carry_in;
@@ -25,16 +43,23 @@ module alu
 endmodule
 
 // Usable for immediate A==B compare during A-B-1 operation
-module check_if_0xF (input AluVal in, output ret);
+module check_if_0xF
+#(parameter ALU_BITS_WIDTH)
+(input aluParams#(ALU_BITS_WIDTH)::AluVal in, output ret);
     assign ret = (in == { $bits(in) {1'b1} });
 endmodule
 
 module alu_test;
-    wire AluArgs args;
-    wire AluRet ret;
+    localparam ALU_BITS_WIDTH = 16; //FIXME: remove
 
-    AluVal d1;
-    AluVal d2;
+    typedef aluParams#(ALU_BITS_WIDTH)::AluVal AluVal;
+    typedef aluParams#(ALU_BITS_WIDTH)::AluArgs AluArgs;
+
+    wire AluArgs args;
+    wire aluParams#(ALU_BITS_WIDTH)::AluRet ret;
+
+    aluParams#(ALU_BITS_WIDTH)::AluVal d1;
+    aluParams#(ALU_BITS_WIDTH)::AluVal d2;
     assign args.d1 = d1;
     assign args.d2 = d2;
 
@@ -45,10 +70,10 @@ module alu_test;
     AluCtrl ctrl;
     assign args.ctrl = ctrl;
 
-    wire AluVal res = ret.res;
+    wire aluParams#(ALU_BITS_WIDTH)::AluVal res = ret.res;
 
-    alu a(.*);
-    check_if_0xF res_chk(res, res_is_0xF);
+    alu#(ALU_BITS_WIDTH) a(.*);
+    check_if_0xF#(ALU_BITS_WIDTH) res_chk(res, res_is_0xF);
 
     initial begin
         ctrl.ctrl.b_inv = 0;

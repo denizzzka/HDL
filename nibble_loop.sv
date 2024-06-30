@@ -1,6 +1,6 @@
 // Loops ALU calculations over all nibbles
 module loopOverAllNibbles
-    #(parameter NIBBLES_NUM_WIDTH)
+    #(parameter ALU_BITS_WIDTH)
     (
         input wire clk,
         //TODO: rename:
@@ -10,13 +10,15 @@ module loopOverAllNibbles
         ref logic carry_in_out, // TODO: duplicates carry_in from AluCtrl ctrl
         input wire check_if_result_0xF, // for A==B comparison
         input wire word2_is_signed_and_negative, // useful for SUB on signed values shorter than 8 nibbles
-        input wire[32/$bits(AluVal)-1:0][$bits(AluVal)-1:0] word1, //TODO: remove in favor to preinit_result value?
-        input wire[32/$bits(AluVal)-1:0][$bits(AluVal)-1:0] word2,
+        input wire[32/$bits(aluParams#(ALU_BITS_WIDTH)::AluVal)-1:0][$bits(aluParams#(ALU_BITS_WIDTH)::AluVal)-1:0] word1, //TODO: remove in favor to preinit_result value?
+        input wire[32/$bits(aluParams#(ALU_BITS_WIDTH)::AluVal)-1:0][$bits(aluParams#(ALU_BITS_WIDTH)::AluVal)-1:0] word2,
         input wire enable_preinit_only, // Hack for fast zero bits shifting
         input wire[31:0] preinit_result,
         output wire busy,
-        output wire[32/$bits(AluVal)-1:0][$bits(AluVal)-1:0] result
+        output wire[32/$bits(aluParams#(ALU_BITS_WIDTH)::AluVal)-1:0][$bits(aluParams#(ALU_BITS_WIDTH)::AluVal)-1:0] result
     );
+
+    localparam NIBBLES_NUM_WIDTH = $clog2(32 / ALU_BITS_WIDTH);
 
     // "reverse" means from MSB to LSB
     wire reverse_direction = (ctrl.ctrl.cmd == 'b_11 /* RSHFT */);
@@ -70,8 +72,8 @@ module loopOverAllNibbles
 
     assign busy = loop_perm_to_count && ~overflow;
 
-    wire AluArgs alu_args;
-    wire AluRet alu_ret;
+    wire aluParams#(ALU_BITS_WIDTH)::AluArgs alu_args;
+    wire aluParams#(ALU_BITS_WIDTH)::AluRet alu_ret;
     assign alu_args.ctrl.ctrl.carry_in = carry_in_out;
     assign alu_args.ctrl.ctrl.b_inv = ctrl.ctrl.b_inv;;
     assign alu_args.ctrl.ctrl.carry_disable = ctrl.ctrl.carry_disable;
@@ -80,8 +82,8 @@ module loopOverAllNibbles
     assign alu_args.d1 = word1[curr_nibble_idx];
     assign alu_args.d2 = word2[curr_nibble_idx];
 
-    alu a(.args(alu_args), .ret(alu_ret));
-    check_if_0xF chk_0xf(.in(alu_ret.res), .ret(is_result_0xF));
+    alu#(ALU_BITS_WIDTH) a(.args(alu_args), .ret(alu_ret));
+    check_if_0xF#(ALU_BITS_WIDTH) chk_0xf(.in(alu_ret.res), .ret(is_result_0xF));
 
     wire result_carry = reverse_direction ? alu_args.d2[0] : alu_ret.carry_out;
 
@@ -125,7 +127,7 @@ module loopOverAllNibbles_test;
     logic[31:0] result;
     wire busy;
 
-    loopOverAllNibbles #(1) l(.*);
+    loopOverAllNibbles #(16) l(.*);
 
     AluCtrl rshft;
 
