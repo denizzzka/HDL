@@ -77,9 +77,11 @@ module control #(parameter START_ADDR = 0)
     instr_stencil i_s(.*);
 
     `ifdef ALU_BITS_WIDTH_4
+        localparam ALU_BITS_WIDTH = 4;
         localparam NIBBLES_NUM_WIDTH = 3;
     `endif
     `ifdef ALU_BITS_WIDTH_16
+        localparam ALU_BITS_WIDTH = 16;
         localparam NIBBLES_NUM_WIDTH = 1;
     `endif
 
@@ -192,7 +194,7 @@ module control #(parameter START_ADDR = 0)
 
     wire enable_preinit_only_for_shift = (currState == INCR_PC_STORE && i_s.is_shift_operation);
 
-    loopOverAllNibbles #(16) l(
+    loopOverAllNibbles #(ALU_BITS_WIDTH) l(
         .clk,
         .loop_perm_to_count(alu_perm_to_count),
         .ctrl(alu_ctrl),

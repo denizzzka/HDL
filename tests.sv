@@ -1,9 +1,11 @@
 module tests;
     full_adder_test fa;
-    alu_test a;
+    alu_test#(.ALU_BITS_WIDTH(4)) at4;
+    alu_test#(.ALU_BITS_WIDTH(16)) at16;
     alu_4bit_test a4;
     alu16_test a16;
-    loopOverAllNibbles_test#(.ALU_BITS_WIDTH(16)) lan;
+    loopOverAllNibbles_test#(.ALU_BITS_WIDTH(4)) lan4;
+    loopOverAllNibbles_test#(.ALU_BITS_WIDTH(16)) lan16;
     shift_loop_test sh;
     Ram_test r;
     control_test_bench tb;
