@@ -1,31 +1,32 @@
 // Loops ALU calculations over all nibbles
 module loopOverAllNibbles
+    #(parameter NIBBLES_NUM_WIDTH)
     (
         input wire clk,
         //TODO: rename:
         input wire loop_perm_to_count, // otherwise - reset
-        input wire[2:0] loop_nibbles_number,
+        input wire[NIBBLES_NUM_WIDTH-1:0] loop_nibbles_number,
         input wire AluCtrl ctrl,
         ref logic carry_in_out, // TODO: duplicates carry_in from AluCtrl ctrl
         input wire check_if_result_0xF, // for A==B comparison
         input wire word2_is_signed_and_negative, // useful for SUB on signed values shorter than 8 nibbles
-        input wire[7:0][3:0] word1, //TODO: remove in favor to preinit_result value?
-        input wire[7:0][3:0] word2,
+        input wire[32/$bits(AluVal)-1:0][$bits(AluVal)-1:0] word1, //TODO: remove in favor to preinit_result value?
+        input wire[32/$bits(AluVal)-1:0][$bits(AluVal)-1:0] word2,
         input wire enable_preinit_only, // Hack for fast zero bits shifting
         input wire[31:0] preinit_result,
         output wire busy,
-        output wire[7:0][3:0] result
+        output wire[32/$bits(AluVal)-1:0][$bits(AluVal)-1:0] result
     );
 
     // "reverse" means from MSB to LSB
     wire reverse_direction = (ctrl.ctrl.cmd == 'b_11 /* RSHFT */);
-    wire[3:0] reset_val = reverse_direction ? 4'(loop_nibbles_number) : 0;
+    wire[NIBBLES_NUM_WIDTH:0] reset_val = reverse_direction ? (NIBBLES_NUM_WIDTH+1)'(loop_nibbles_number) : 0;
 
-    logic[3:0] counter; // contains additional overflow control bit
-    wire[2:0] curr_nibble_idx = counter[2:0];
+    logic[NIBBLES_NUM_WIDTH:0] counter; // contains additional overflow control bit
+    wire[NIBBLES_NUM_WIDTH-1:0] curr_nibble_idx = counter[NIBBLES_NUM_WIDTH-1:0];
 
     //TODO: move overflow bit to outside to share this flag with another module?
-    wire overflow = counter[3];
+    wire overflow = counter[NIBBLES_NUM_WIDTH];
 
     wire is_result_0xF;
     wire result_0xF_check_failed = check_if_result_0xF && ~is_result_0xF;
@@ -54,7 +55,7 @@ module loopOverAllNibbles
             if(~process_done)
                 counter <= reverse_direction ? counter-1 : counter+1;
             else
-                counter[3] <= 1; // set overflow
+                counter[NIBBLES_NUM_WIDTH] <= 1; // set overflow
 
     logic process_done;
 
@@ -123,7 +124,7 @@ module loopOverAllNibbles_test;
     logic[31:0] result;
     wire busy;
 
-    loopOverAllNibbles l(.*);
+    loopOverAllNibbles #(3) l(.*);
 
     AluCtrl rshft;
 
