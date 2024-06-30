@@ -63,7 +63,7 @@ module alu_test;
 
             ctrl.ctrl.carry_in = 1;
             #1
-            assert((d2 >> 1) + 'b1000 == res); else $error("%b rshift = %b carry=%b", d2, res, a.carry);
+            assert((d2 >> 1) + { 1'b1, { $bits(AluVal)-1 {1'b0} } } == res); else $error("%b rshift = %b carry=%b", d2, res, a.carry);
 
             d1 = 0; // TODO: Why d1 = 0 inside of "for" loop isn't works as expected?
             for(d1 = 0; d1 < 15; d1++)
@@ -79,7 +79,7 @@ module alu_test;
                 #1
                 assert(d1 + ~d2 == res); else $error("%h + ~%h = %h (must be %h) carry=%b", d1, d2, res, d1 + ~d2, carry_out);
                 assert((16'(d1) + 16'(4'(~d2)) > 16'b1111) == carry_out); else $error("d1=%b d2=%b carry_out=%b", d1, ~d2, carry_out);
-                assert((res == 'b1111) == res_is_0xF);
+                assert((res == {$bits(AluVal){1'b1}}) == res_is_0xF);
 
                 ctrl.cmd = SUB;
                 #1
