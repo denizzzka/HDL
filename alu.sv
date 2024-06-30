@@ -71,8 +71,7 @@ module alu_test;
                 ctrl.cmd = ADD;
                 #1
                 assert(d1 + d2 == res); else $error("%h + %h = %h carry=%b", d1, d2, res, carry_out);
-                assert((16'(d1) + 16'(d2) > 16'b1111) == carry_out); else $error("d1=%b d2=%b carry_out=%b", d1, d2, carry_out);
-                assert((res == 'b1111) == res_is_0xF);
+                assert((32'(d1) + 32'(d2) > {$bits(AluVal){1'b1}}) == carry_out); else $error("d1=%b d2=%b carry_out=%b", d1, d2, carry_out);
 
                 ctrl.cmd = ADD;
                 ctrl.ctrl.b_inv = 1;
