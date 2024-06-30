@@ -24,22 +24,39 @@ module alu
 
     wire carry_in = args.ctrl.ctrl.carry_in;
 
-    wire[4:0] carry;
-    assign carry[0] = carry_in;
+    if(ALU_BITS_WIDTH == 4) begin
+        wire Alu4bitArgs internalArgs;
+        assign internalArgs.d1 = args.d1;
+        // optionally inverts data2
+        assign internalArgs.d2 = args.d2 ^ { $bits(args.d2) {args.ctrl.ctrl.b_inv} };
+        wire[3:0] internal_propagate; // unused
 
-    wire Alu16bitArgs internalArgs;
-    assign internalArgs.d1 = args.d1;
-    // optionally inverts data2
-    assign internalArgs.d2 = args.d2 ^ { $bits(args.d2) {args.ctrl.ctrl.b_inv} };
+        alu_4bit a(
+            .args(internalArgs),
+            .carry_in,
+            .carry_disable(args.ctrl.ctrl.carry_disable),
+            .cmd(args.ctrl.ctrl.cmd),
+            .res(ret.res),
+            .internal_propagate,
+            .carry_out(ret.carry_out)
+        );
+    end;
 
-    alu_16bit a(
-        .args(internalArgs),
-        .carry_in,
-        .carry_disable(args.ctrl.ctrl.carry_disable),
-        .cmd(args.ctrl.ctrl.cmd),
-        .res(ret.res),
-        .carry_out(ret.carry_out)
-    );
+    if(ALU_BITS_WIDTH == 16) begin
+        wire Alu16bitArgs internalArgs;
+        assign internalArgs.d1 = args.d1;
+        // optionally inverts data2
+        assign internalArgs.d2 = args.d2 ^ { $bits(args.d2) {args.ctrl.ctrl.b_inv} };
+
+        alu_16bit a(
+            .args(internalArgs),
+            .carry_in,
+            .carry_disable(args.ctrl.ctrl.carry_disable),
+            .cmd(args.ctrl.ctrl.cmd),
+            .res(ret.res),
+            .carry_out(ret.carry_out)
+        );
+    end;
 endmodule
 
 // Usable for immediate A==B compare during A-B-1 operation
@@ -49,9 +66,7 @@ module check_if_0xF
     assign ret = (in == { $bits(in) {1'b1} });
 endmodule
 
-module alu_test;
-    localparam ALU_BITS_WIDTH = 16; //FIXME: remove
-
+module alu_test #(parameter ALU_BITS_WIDTH);
     typedef aluParams#(ALU_BITS_WIDTH)::AluVal AluVal;
     typedef aluParams#(ALU_BITS_WIDTH)::AluArgs AluArgs;
 
@@ -80,7 +95,7 @@ module alu_test;
 
         //~ $monitor("ctrl=%b d1=%0d d2=%0d gen=%b propagate=%b carry=%b res=%0d res=%b carry_out=%b", ctrl, d1, d2, a.gen, a.propagate, a.carry, res, res, carry_out);
 
-        for(d2 = 0; d2 < 256; d2++)
+        for(d2 = 0; d2 < 15; d2++)
         begin
             ctrl.cmd = RSHFT;
             #1
@@ -88,10 +103,10 @@ module alu_test;
 
             ctrl.ctrl.carry_in = 1;
             #1
-            assert((d2 >> 1) + { 1'b1, { $bits(AluVal)-1 {1'b0} } } == res); else $error("%b rshift = %b carry=%b", d2, res, a.carry);
+            assert((d2 >> 1) + { 1'b1, { $bits(AluVal)-1 {1'b0} } } == res); else $error("%b rshift = %b", d2, res);
 
             d1 = 0; // TODO: Why d1 = 0 inside of "for" loop isn't works as expected?
-            for(d1 = 0; d1 < 256; d1++)
+            for(d1 = 0; d1 < 15; d1++)
             begin
                 ctrl.cmd = ADD;
                 #1
@@ -102,7 +117,7 @@ module alu_test;
                 ctrl.ctrl.b_inv = 1;
                 #1
                 assert(d1 + ~d2 == res); else $error("%h + ~%h = %h (must be %h) carry=%b", d1, d2, res, d1 + ~d2, carry_out);
-                assert((32'(d1) + 32'(16'(~d2)) > {$bits(AluVal){1'b1}}) == carry_out); else $error("d1=%b d2=%b carry_out=%b", d1, ~d2, carry_out);
+                assert((32'(d1) + 32'(ALU_BITS_WIDTH'(~d2)) > {$bits(AluVal){1'b1}}) == carry_out); else $error("d1=%b d2=%b carry_out=%b", d1, ~d2, carry_out);
                 assert((res == {$bits(AluVal){1'b1}}) == res_is_0xF);
 
                 ctrl.cmd = SUB;
