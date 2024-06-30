@@ -17,6 +17,14 @@ module alu_16bit
     wire[3:0] carry;
     assign carry[0] = carry_in;
 
+    wire[3:0] rshift_carry;
+    assign rshift_carry[0] = args.d2[4];
+    assign rshift_carry[1] = args.d2[8];
+    assign rshift_carry[2] = args.d2[12];
+    assign rshift_carry[3] = carry_in;
+
+    wire isRShiftOP = (carry_disable && cmd == 'b11);
+
     wire[3:0] gen;
     wire[3:0] prop;
 
@@ -27,9 +35,12 @@ module alu_16bit
 
         wire[3:0] internal_propagate;
 
+        // for RSHIFT op
+        wire local_carry = isRShiftOP ? rshift_carry[i/4] : carry[i/4];
+
         alu_4bit a4b(
             .args(args4b),
-            .carry_in(carry[i/4]),
+            .carry_in(local_carry),
             .carry_disable,
             .cmd,
             .res(res[i+3:i]),
@@ -73,15 +84,15 @@ module alu16_test;
     initial begin
         //~ $monitor("ctrl=%b d1=%0d d2=%0d gen=%b propagate=%b carry=%b res=%0d res=%b carry_out=%b", ctrl, d1, d2, a.gen, a.propagate, a.carry, res, res, carry_out);
 
-        for(d2 = 0; d2 < 15; d2++)
+        for(d2 = 0; d2 < 256; d2++)
         begin
             ctrl.cmd = RSHFT;
             #1
-            //~ assert(d2 >> 1 == res); else $error("%b rshift = %b carry=%b", d2, res, a.carry);
+            assert(d2 >> 1 == res); else $error("%b rshift = %b carry_out=%b carry=%b gen=%b prop=%b", d2, res, carry_out, a.carry, a.gen, a.prop);
 
             ctrl.ctrl.carry_in = 1;
             #1
-            //~ assert((d2 >> 1) + 'b1000 == res); else $error("%b rshift = %b carry=%b", d2, res, a.carry);
+            assert((d2 >> 1) + 'b1000_0000_0000_0000 == res); else $error("%b rshift = %b carry=%b", d2, res, a.carry);
 
             d1 = 0; // TODO: Why d1 = 0 inside of "for" loop isn't works as expected?
             for(d1 = 0; d1 < 15; d1++)
