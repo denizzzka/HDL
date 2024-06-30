@@ -12,7 +12,7 @@ module alu_4bit
         logic[1:0] cmd, // cmd for full adder mux switch
         output wire[3:0] res,
         output wire carry_out, // AKA "generate"
-        output wire[3:0] internal_propagate // zero cost, can be leave unused
+        output wire[3:0] internal_propagate // zero cost, can be left unused
     );
 
     wire[3:0] carry;
